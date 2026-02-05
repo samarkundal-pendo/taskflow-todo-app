@@ -127,6 +127,27 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    // Track filters cleared event
+    if (typeof window !== 'undefined' && (window as any).pendo) {
+      const hasFilters = filter.status !== 'all' || filter.priority !== 'all' ||
+                        filter.categoryId !== 'all' || filter.search !== '';
+
+      if (hasFilters) {
+        (window as any).pendo.track('filters_cleared', {
+          filters_active_before_clear: [
+            filter.status !== 'all' ? 'status' : null,
+            filter.priority !== 'all' ? 'priority' : null,
+            filter.categoryId !== 'all' ? 'category' : null,
+            filter.search ? 'search' : null
+          ].filter(Boolean).join(','),
+          had_status_filter: filter.status !== 'all',
+          had_priority_filter: filter.priority !== 'all',
+          had_category_filter: filter.categoryId !== 'all',
+          had_search: !!filter.search
+        });
+      }
+    }
+
     setFilter({
       status: 'all',
       priority: 'all',
