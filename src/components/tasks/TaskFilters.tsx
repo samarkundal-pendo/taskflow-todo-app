@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { TaskFilter, TaskSort, Category } from '../../types';
 import { Select } from '../common/Input';
@@ -21,11 +21,41 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   onSortChange,
   onClearFilters,
 }) => {
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousSortRef = useRef<TaskSort>(sort);
+
   const hasActiveFilters =
     filter.status !== 'all' ||
     filter.priority !== 'all' ||
     filter.categoryId !== 'all' ||
     filter.search !== '';
+
+  // Track search with debounce
+  useEffect(() => {
+    if (filter.search) {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+        if (typeof window !== 'undefined' && (window as any).pendo) {
+          // This would need results count from parent, so we'll track without it for now
+          (window as any).pendo.track('task_searched', {
+            search_query: filter.search,
+            search_query_length: filter.search.length,
+            results_count: 0,
+            has_results: true
+          });
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [filter.search]);
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
@@ -73,7 +103,22 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={statusOptions}
             value={filter.status}
-            onChange={e => onFilterChange({ ...filter, status: e.target.value as TaskFilter['status'] })}
+            onChange={e => {
+              const newStatus = e.target.value as TaskFilter['status'];
+              onFilterChange({ ...filter, status: newStatus });
+
+              // Track filter change
+              if (typeof window !== 'undefined' && (window as any).pendo) {
+                (window as any).pendo.track('task_filtered', {
+                  filter_type: 'status',
+                  filter_value: newStatus,
+                  status_filter: newStatus,
+                  priority_filter: filter.priority,
+                  category_filter: filter.categoryId,
+                  results_count: 0
+                });
+              }
+            }}
           />
         </div>
 
@@ -81,7 +126,22 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={priorityOptions}
             value={filter.priority}
-            onChange={e => onFilterChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
+            onChange={e => {
+              const newPriority = e.target.value as TaskFilter['priority'];
+              onFilterChange({ ...filter, priority: newPriority });
+
+              // Track filter change
+              if (typeof window !== 'undefined' && (window as any).pendo) {
+                (window as any).pendo.track('task_filtered', {
+                  filter_type: 'priority',
+                  filter_value: newPriority,
+                  status_filter: filter.status,
+                  priority_filter: newPriority,
+                  category_filter: filter.categoryId,
+                  results_count: 0
+                });
+              }
+            }}
           />
         </div>
 
@@ -89,7 +149,22 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={categoryOptions}
             value={filter.categoryId}
-            onChange={e => onFilterChange({ ...filter, categoryId: e.target.value })}
+            onChange={e => {
+              const newCategoryId = e.target.value;
+              onFilterChange({ ...filter, categoryId: newCategoryId });
+
+              // Track filter change
+              if (typeof window !== 'undefined' && (window as any).pendo) {
+                (window as any).pendo.track('task_filtered', {
+                  filter_type: 'category',
+                  filter_value: newCategoryId,
+                  status_filter: filter.status,
+                  priority_filter: filter.priority,
+                  category_filter: newCategoryId,
+                  results_count: 0
+                });
+              }
+            }}
           />
         </div>
 
@@ -97,7 +172,20 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={sortOptions}
             value={sort}
-            onChange={e => onSortChange(e.target.value as TaskSort)}
+            onChange={e => {
+              const newSort = e.target.value as TaskSort;
+              onSortChange(newSort);
+
+              // Track sort change
+              if (typeof window !== 'undefined' && (window as any).pendo) {
+                (window as any).pendo.track('task_sorted', {
+                  sort_by: newSort,
+                  previous_sort: previousSortRef.current,
+                  task_count: 0
+                });
+                previousSortRef.current = newSort;
+              }
+            }}
           />
         </div>
 
