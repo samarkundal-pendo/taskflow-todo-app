@@ -29,6 +29,25 @@ export const TaskDetailPage: React.FC = () => {
   const task = getTaskById(id!);
   const category = task ? getCategoryById(task.categoryId) : undefined;
 
+  // Track task detail viewed event
+  React.useEffect(() => {
+    if (task) {
+      const overdue = isOverdue(task.dueDate, task.dueTime, task.status);
+
+      if (typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('task_detail_viewed', {
+          task_id: task.id,
+          task_status: task.status,
+          priority: task.priority,
+          has_subtasks: task.subtasks.length > 0,
+          has_description: !!task.description,
+          is_overdue: overdue,
+          referrer_page: document.referrer || 'direct'
+        });
+      }
+    }
+  }, [task?.id]);
+
   if (!task) {
     return (
       <div className="text-center py-12">
