@@ -169,6 +169,27 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            // Track reminder triggered event
+            if (typeof window !== 'undefined' && (window as any).pendo) {
+              const dueDateTime = task.dueDate && task.dueTime
+                ? new Date(`${task.dueDate}T${task.dueTime}`)
+                : task.dueDate
+                ? new Date(task.dueDate)
+                : null;
+
+              const timeUntilDueMs = dueDateTime ? dueDateTime.getTime() - new Date().getTime() : 0;
+              const timeUntilDueMinutes = Math.floor(timeUntilDueMs / (1000 * 60));
+
+              (window as any).pendo.track('reminder_triggered', {
+                task_id: task.id,
+                task_title: task.title,
+                reminder_type: task.reminder,
+                due_date: task.dueDate,
+                time_until_due: timeUntilDueMinutes,
+                notification_permission_granted: Notification.permission === 'granted'
+              });
+            }
           }
 
           // Check for overdue (only notify once per task per session)
@@ -183,6 +204,26 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+
+              // Track overdue notification triggered event
+              if (typeof window !== 'undefined' && (window as any).pendo) {
+                const dueDateTime = task.dueDate && task.dueTime
+                  ? new Date(`${task.dueDate}T${task.dueTime}`)
+                  : task.dueDate
+                  ? new Date(task.dueDate)
+                  : new Date();
+
+                const overdueMs = new Date().getTime() - dueDateTime.getTime();
+                const overdueDays = Math.floor(overdueMs / (1000 * 60 * 60 * 24));
+
+                (window as any).pendo.track('overdue_notification_triggered', {
+                  task_id: task.id,
+                  task_title: task.title,
+                  priority: task.priority,
+                  days_overdue: overdueDays,
+                  has_reminder_setting: task.reminder !== 'none'
+                });
+              }
             }
           }
         }

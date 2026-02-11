@@ -134,16 +134,11 @@ export const TasksPage: React.FC = () => {
 
       if (hasFilters) {
         (window as any).pendo.track('filters_cleared', {
-          filters_active_before_clear: [
-            filter.status !== 'all' ? 'status' : null,
-            filter.priority !== 'all' ? 'priority' : null,
-            filter.categoryId !== 'all' ? 'category' : null,
-            filter.search ? 'search' : null
-          ].filter(Boolean).join(','),
           had_status_filter: filter.status !== 'all',
           had_priority_filter: filter.priority !== 'all',
           had_category_filter: filter.categoryId !== 'all',
-          had_search: !!filter.search
+          had_search_query: !!filter.search,
+          had_custom_sort: sort !== 'createdAt'
         });
       }
     }

@@ -49,8 +49,7 @@ export const Dashboard: React.FC = () => {
 
     // Track quick task creation event
     if (typeof window !== 'undefined' && (window as any).pendo) {
-      (window as any).pendo.track('task_quick_created', {
-        task_id: 'quick_add',
+      (window as any).pendo.track('task_quick_added', {
         task_title_length: taskTitle.length
       });
     }
@@ -92,10 +91,10 @@ export const Dashboard: React.FC = () => {
           color="blue"
           onClick={() => {
             if (typeof window !== 'undefined' && (window as any).pendo) {
-              (window as any).pendo.track('dashboard_stat_clicked', {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
                 stat_type: 'total_tasks',
                 stat_value: totalTasks,
-                destination_filter: 'all'
+                target_filter: 'all'
               });
             }
             navigate('/tasks');
@@ -108,10 +107,10 @@ export const Dashboard: React.FC = () => {
           color="green"
           onClick={() => {
             if (typeof window !== 'undefined' && (window as any).pendo) {
-              (window as any).pendo.track('dashboard_stat_clicked', {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
                 stat_type: 'completed',
                 stat_value: completedTasks,
-                destination_filter: 'completed'
+                target_filter: 'completed'
               });
             }
             navigate('/tasks?status=completed');
@@ -124,10 +123,10 @@ export const Dashboard: React.FC = () => {
           color="yellow"
           onClick={() => {
             if (typeof window !== 'undefined' && (window as any).pendo) {
-              (window as any).pendo.track('dashboard_stat_clicked', {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
                 stat_type: 'pending',
                 stat_value: pendingTasks,
-                destination_filter: 'pending'
+                target_filter: 'pending'
               });
             }
             navigate('/tasks?status=pending');
@@ -140,10 +139,10 @@ export const Dashboard: React.FC = () => {
           color="red"
           onClick={() => {
             if (typeof window !== 'undefined' && (window as any).pendo) {
-              (window as any).pendo.track('dashboard_stat_clicked', {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
                 stat_type: 'overdue',
                 stat_value: overdueTasks,
-                destination_filter: 'overdue'
+                target_filter: 'overdue'
               });
             }
             navigate('/tasks?status=overdue');

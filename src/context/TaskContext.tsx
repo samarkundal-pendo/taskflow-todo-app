@@ -285,11 +285,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           : 0;
         const timeSinceCompletedHours = Math.floor(timeSinceCompletedMs / (1000 * 60 * 60));
 
-        (window as any).pendo.track('task_uncompleted', {
+        (window as any).pendo.track('task_reopened', {
           task_id: taskId,
-          task_priority: task.priority,
-          category_id: task.categoryId,
-          time_since_completed_hours: timeSinceCompletedHours
+          priority: task.priority,
+          days_since_completion: Math.floor(timeSinceCompletedHours / 24)
         });
       }
     }
@@ -301,24 +300,33 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     dispatch({ type: 'TOGGLE_SUBTASK', payload: { taskId, subtaskId } });
 
-    // Track subtask completion event
+    // Track subtask completion/reopening event
     if (typeof window !== 'undefined' && (window as any).pendo && task && subtask) {
       const newStatus = !subtask.completed;
       const completedSubtasksCount = task.subtasks.filter(st =>
         st.id === subtaskId ? newStatus : st.completed
       ).length;
       const completionPercentage = Math.round((completedSubtasksCount / task.subtasks.length) * 100);
-      const allSubtasksCompleted = completedSubtasksCount === task.subtasks.length;
 
-      (window as any).pendo.track('subtask_completed', {
-        task_id: taskId,
-        subtask_id: subtaskId,
-        subtask_status: newStatus ? 'completed' : 'pending',
-        completed_subtasks_count: completedSubtasksCount,
-        total_subtasks_count: task.subtasks.length,
-        completion_percentage: completionPercentage,
-        all_subtasks_completed: allSubtasksCompleted
-      });
+      if (newStatus) {
+        // Subtask being completed
+        (window as any).pendo.track('subtask_completed', {
+          task_id: taskId,
+          subtask_id: subtaskId,
+          completed_subtasks: completedSubtasksCount,
+          total_subtasks: task.subtasks.length,
+          completion_percentage: completionPercentage,
+          location: 'task_detail'
+        });
+      } else {
+        // Subtask being reopened
+        (window as any).pendo.track('subtask_reopened', {
+          task_id: taskId,
+          subtask_id: subtaskId,
+          completed_subtasks: completedSubtasksCount,
+          total_subtasks: task.subtasks.length
+        });
+      }
     }
   };
 

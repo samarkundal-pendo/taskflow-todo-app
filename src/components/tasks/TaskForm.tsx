@@ -129,11 +129,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
       // Track validation error event
       if (typeof window !== 'undefined' && (window as any).pendo) {
-        (window as any).pendo.track('task_form_validation_error', {
+        (window as any).pendo.track('validation_error_occurred', {
+          form_type: isEdit ? 'edit_task' : 'create_task',
           error_fields: validationErrors.map(err => err.field).join(','),
           error_count: validationErrors.length,
-          is_edit: isEdit,
-          validation_errors: validationErrors.map(err => err.message).join('; ')
+          is_edit_mode: isEdit
         });
       }
 

@@ -40,11 +40,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       searchTimeoutRef.current = setTimeout(() => {
         if (typeof window !== 'undefined' && (window as any).pendo) {
           // This would need results count from parent, so we'll track without it for now
-          (window as any).pendo.track('task_searched', {
+          (window as any).pendo.track('task_search_performed', {
             search_query: filter.search,
-            search_query_length: filter.search.length,
             results_count: 0,
-            has_results: true
+            query_length: filter.search.length
           });
         }
       }, 1000);
@@ -109,13 +108,11 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
               // Track filter change
               if (typeof window !== 'undefined' && (window as any).pendo) {
-                (window as any).pendo.track('task_filtered', {
+                (window as any).pendo.track('task_filter_applied', {
                   filter_type: 'status',
                   filter_value: newStatus,
-                  status_filter: newStatus,
-                  priority_filter: filter.priority,
-                  category_filter: filter.categoryId,
-                  results_count: 0
+                  results_count: 0,
+                  has_multiple_filters: filter.priority !== 'all' || filter.categoryId !== 'all' || !!filter.search
                 });
               }
             }}
@@ -132,13 +129,11 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
               // Track filter change
               if (typeof window !== 'undefined' && (window as any).pendo) {
-                (window as any).pendo.track('task_filtered', {
+                (window as any).pendo.track('task_filter_applied', {
                   filter_type: 'priority',
                   filter_value: newPriority,
-                  status_filter: filter.status,
-                  priority_filter: newPriority,
-                  category_filter: filter.categoryId,
-                  results_count: 0
+                  results_count: 0,
+                  has_multiple_filters: filter.status !== 'all' || filter.categoryId !== 'all' || !!filter.search
                 });
               }
             }}
@@ -155,13 +150,11 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
               // Track filter change
               if (typeof window !== 'undefined' && (window as any).pendo) {
-                (window as any).pendo.track('task_filtered', {
+                (window as any).pendo.track('task_filter_applied', {
                   filter_type: 'category',
                   filter_value: newCategoryId,
-                  status_filter: filter.status,
-                  priority_filter: filter.priority,
-                  category_filter: newCategoryId,
-                  results_count: 0
+                  results_count: 0,
+                  has_multiple_filters: filter.status !== 'all' || filter.priority !== 'all' || !!filter.search
                 });
               }
             }}
@@ -178,7 +171,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
               // Track sort change
               if (typeof window !== 'undefined' && (window as any).pendo) {
-                (window as any).pendo.track('task_sorted', {
+                (window as any).pendo.track('task_sort_changed', {
                   sort_by: newSort,
                   previous_sort: previousSortRef.current,
                   task_count: 0
