@@ -43,10 +43,36 @@ export const TaskFormPage: React.FC = () => {
         ...taskData,
         updatedAt: new Date().toISOString(),
       });
+
+      // Pendo Track Event: task_updated
+      const changedFields = Object.keys(taskData).filter(
+        (key) => (taskData as unknown as Record<string, unknown>)[key] !== (existingTask as unknown as Record<string, unknown>)[key]
+      );
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_updated', {
+          task_id: existingTask.id,
+          fields_changed: changedFields.join(','),
+          priority: taskData.priority,
+          categoryId: taskData.categoryId,
+        });
+      }
+
       showToast('Task updated successfully!', 'success');
       navigate(`/tasks/${existingTask.id}`);
     } else {
       addTask(taskData);
+
+      // Pendo Track Event: task_created
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_created', {
+          priority: taskData.priority,
+          categoryId: taskData.categoryId,
+          has_due_date: String(!!taskData.dueDate),
+          has_reminder: String(taskData.reminder !== 'none'),
+          subtask_count: String(taskData.subtasks.length),
+        });
+      }
+
       showToast('Task created successfully!', 'success');
       navigate('/tasks');
     }

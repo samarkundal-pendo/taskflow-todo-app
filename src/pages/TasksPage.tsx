@@ -37,6 +37,17 @@ export const TasksPage: React.FC = () => {
     const currentSort = searchParams.get('sort');
     if (currentSort && currentSort !== 'createdAt') params.set('sort', currentSort);
     setSearchParams(params, { replace: true });
+
+    // Pendo Track Event: task_filters_applied
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_filters_applied', {
+        status_filter: newFilter.status,
+        priority_filter: newFilter.priority,
+        category_filter: newFilter.categoryId,
+        has_search_query: String(!!newFilter.search),
+        sort_by: currentSort || 'createdAt',
+      });
+    }
   }, [searchParams, setSearchParams]);
 
   const setSort = useCallback((newSort: TaskSort) => {
@@ -127,6 +138,16 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    // Pendo Track Event: filters_cleared
+    if (typeof pendo !== 'undefined') {
+      pendo.track('filters_cleared', {
+        previous_status_filter: filter.status,
+        previous_priority_filter: filter.priority,
+        previous_category_filter: filter.categoryId,
+        had_search_query: String(!!filter.search),
+      });
+    }
+
     setFilter({
       status: 'all',
       priority: 'all',

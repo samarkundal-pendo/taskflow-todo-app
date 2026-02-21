@@ -188,6 +188,26 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const toggleTaskStatus = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task) {
+      const newStatus = task.status === 'pending' ? 'completed' : 'pending';
+      const wasOverdue = task.dueDate
+        ? new Date(task.dueDate) < new Date() && task.status === 'pending'
+        : false;
+
+      // Pendo Track Event: task_status_toggled
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_status_toggled', {
+          task_id: taskId,
+          new_status: newStatus,
+          previous_status: task.status,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          was_overdue: String(wasOverdue),
+        });
+      }
+    }
+
     dispatch({ type: 'TOGGLE_TASK_STATUS', payload: taskId });
   };
 
