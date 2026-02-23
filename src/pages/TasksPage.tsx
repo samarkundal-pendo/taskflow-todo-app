@@ -127,6 +127,20 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    // Pendo Track Event: task_filters_cleared
+    if (typeof pendo !== 'undefined') {
+      let clearedCount = 0;
+      if (filter.status !== 'all') clearedCount++;
+      if (filter.priority !== 'all') clearedCount++;
+      if (filter.categoryId !== 'all') clearedCount++;
+      if (filter.search !== '') clearedCount++;
+      if (sort !== 'createdAt') clearedCount++;
+
+      pendo.track('task_filters_cleared', {
+        cleared_filters_count: clearedCount,
+      });
+    }
+
     setFilter({
       status: 'all',
       priority: 'all',
