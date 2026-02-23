@@ -88,6 +88,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const permission = await Notification.requestPermission();
     setPermissionStatus(permission);
+
+    pendo.track('browser_notification_permission_requested', {
+      permission_result: permission,
+    });
+
     return permission === 'granted';
   };
 
@@ -105,6 +110,22 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            let minutesUntilDue: number | null = null;
+            if (task.dueDate) {
+              const due = new Date(task.dueDate);
+              if (task.dueTime) {
+                const [h, m] = task.dueTime.split(':');
+                due.setHours(parseInt(h), parseInt(m));
+              }
+              minutesUntilDue = Math.round((due.getTime() - Date.now()) / (1000 * 60));
+            }
+
+            pendo.track('reminder_triggered', {
+              task_id: task.id,
+              reminder_type: task.reminder,
+              minutes_until_due: minutesUntilDue,
+            });
           }
 
           // Check for overdue (only notify once per task per session)
@@ -119,6 +140,22 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+
+              let hoursOverdue: number | null = null;
+              if (task.dueDate) {
+                const due = new Date(task.dueDate);
+                if (task.dueTime) {
+                  const [h, m] = task.dueTime.split(':');
+                  due.setHours(parseInt(h), parseInt(m));
+                }
+                hoursOverdue = Math.round((Date.now() - due.getTime()) / (1000 * 60 * 60) * 10) / 10;
+              }
+
+              pendo.track('overdue_notification_triggered', {
+                task_id: task.id,
+                due_date: task.dueDate,
+                hours_overdue: hoursOverdue,
+              });
             }
           }
         }

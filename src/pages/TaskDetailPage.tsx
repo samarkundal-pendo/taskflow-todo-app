@@ -57,6 +57,20 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleStatus = () => {
+    if (task.status === 'completed') {
+      let timeSinceCompletionHours: number | null = null;
+      if (task.completedAt) {
+        timeSinceCompletionHours = Math.round(
+          (Date.now() - new Date(task.completedAt).getTime()) / (1000 * 60 * 60) * 10
+        ) / 10;
+      }
+      pendo.track('task_reopened', {
+        task_id: task.id,
+        priority: task.priority,
+        category_id: task.categoryId,
+        time_since_completion_hours: timeSinceCompletionHours,
+      });
+    }
     toggleTaskStatus(task.id);
     showToast(
       task.status === 'pending' ? 'Task completed!' : 'Task marked as pending',
@@ -65,10 +79,32 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const currentCompleted = task.subtasks.filter(s => s.completed).length;
+    const newCompleted = subtask?.completed ? currentCompleted - 1 : currentCompleted + 1;
+
+    pendo.track('subtask_toggled', {
+      task_id: task.id,
+      subtask_id: subtaskId,
+      new_status: subtask?.completed ? 'pending' : 'completed',
+      total_subtasks: task.subtasks.length,
+      completed_subtasks: newCompleted,
+      subtask_progress_pct: task.subtasks.length > 0 ? Math.round((newCompleted / task.subtasks.length) * 100) : 0,
+    });
+
     toggleSubtask(task.id, subtaskId);
   };
 
   const handleDelete = () => {
+    pendo.track('task_deleted', {
+      task_id: task.id,
+      task_status: task.status,
+      priority: task.priority,
+      category_id: task.categoryId,
+      had_subtasks: task.subtasks.length > 0,
+      source_page: 'task_detail',
+    });
+
     deleteTask(task.id);
     showToast('Task deleted', 'success');
     navigate('/tasks');

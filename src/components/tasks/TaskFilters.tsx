@@ -62,7 +62,15 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           type="text"
           placeholder="Search tasks..."
           value={filter.search}
-          onChange={e => onFilterChange({ ...filter, search: e.target.value })}
+          onChange={e => {
+            const newSearch = e.target.value;
+            onFilterChange({ ...filter, search: newSearch });
+            if (newSearch.length > 0) {
+              pendo.track('tasks_searched', {
+                search_query_length: newSearch.length,
+              });
+            }
+          }}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>

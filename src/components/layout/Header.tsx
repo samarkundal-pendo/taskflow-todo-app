@@ -61,7 +61,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isSidebarOpen }) =
                     <h3 className="font-semibold text-gray-900">Notifications</h3>
                     {unreadCount > 0 && (
                       <button
-                        onClick={markAllAsRead}
+                        onClick={() => {
+                          pendo.track('notifications_mark_all_read', {
+                            unread_count_before: unreadCount,
+                          });
+                          markAllAsRead();
+                        }}
                         className="text-sm text-blue-500 hover:text-blue-600"
                       >
                         Mark all read
@@ -78,6 +83,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isSidebarOpen }) =
                         <div
                           key={notification.id}
                           onClick={() => {
+                            pendo.track('notification_clicked', {
+                              notification_id: notification.id,
+                              notification_type: notification.type,
+                              task_id: notification.taskId,
+                              was_unread: !notification.read,
+                            });
+
                             markAsRead(notification.id);
                             navigate(`/tasks/${notification.taskId}`);
                             setShowNotifications(false);
