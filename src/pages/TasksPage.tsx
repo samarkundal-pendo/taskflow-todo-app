@@ -37,6 +37,12 @@ export const TasksPage: React.FC = () => {
     const currentSort = searchParams.get('sort');
     if (currentSort && currentSort !== 'createdAt') params.set('sort', currentSort);
     setSearchParams(params, { replace: true });
+
+    pendo.track('tasks_filtered', {
+      filter_status: newFilter.status,
+      filter_priority: newFilter.priority,
+      filter_category_id: newFilter.categoryId,
+    });
   }, [searchParams, setSearchParams]);
 
   const setSort = useCallback((newSort: TaskSort) => {
@@ -47,6 +53,10 @@ export const TasksPage: React.FC = () => {
       params.delete('sort');
     }
     setSearchParams(params, { replace: true });
+
+    pendo.track('tasks_sorted', {
+      sort_by: newSort,
+    });
   }, [searchParams, setSearchParams]);
 
   // Filter and sort tasks
@@ -127,6 +137,13 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    pendo.track('tasks_filters_cleared', {
+      previous_filter_status: filter.status,
+      previous_filter_priority: filter.priority,
+      previous_filter_category_id: filter.categoryId,
+      previous_sort: sort,
+    });
+
     setFilter({
       status: 'all',
       priority: 'all',
