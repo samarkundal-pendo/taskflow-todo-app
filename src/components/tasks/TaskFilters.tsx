@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
 import { TaskFilter, TaskSort, Category } from '../../types';
 import { Select } from '../common/Input';
@@ -21,6 +21,24 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   onSortChange,
   onClearFilters,
 }) => {
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced search tracking
+  const trackSearch = useCallback((query: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    if (query.trim()) {
+      searchDebounceRef.current = setTimeout(() => {
+        if (typeof pendo !== 'undefined') {
+          pendo.track('task_search_performed', {
+            search_query: query.trim().substring(0, 100),
+          });
+        }
+      }, 500);
+    }
+  }, []);
+
   const hasActiveFilters =
     filter.status !== 'all' ||
     filter.priority !== 'all' ||
@@ -62,7 +80,11 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           type="text"
           placeholder="Search tasks..."
           value={filter.search}
-          onChange={e => onFilterChange({ ...filter, search: e.target.value })}
+          onChange={e => {
+            const value = e.target.value;
+            onFilterChange({ ...filter, search: value });
+            trackSearch(value);
+          }}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -73,7 +95,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={statusOptions}
             value={filter.status}
-            onChange={e => onFilterChange({ ...filter, status: e.target.value as TaskFilter['status'] })}
+            onChange={e => {
+              const value = e.target.value as TaskFilter['status'];
+              // Pendo Track Event: task_filter_applied
+              if (typeof pendo !== 'undefined') {
+                pendo.track('task_filter_applied', {
+                  filter_type: 'status',
+                  filter_value: value,
+                });
+              }
+              onFilterChange({ ...filter, status: value });
+            }}
           />
         </div>
 
@@ -81,7 +113,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={priorityOptions}
             value={filter.priority}
-            onChange={e => onFilterChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
+            onChange={e => {
+              const value = e.target.value as TaskFilter['priority'];
+              // Pendo Track Event: task_filter_applied
+              if (typeof pendo !== 'undefined') {
+                pendo.track('task_filter_applied', {
+                  filter_type: 'priority',
+                  filter_value: value,
+                });
+              }
+              onFilterChange({ ...filter, priority: value });
+            }}
           />
         </div>
 
@@ -89,7 +131,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={categoryOptions}
             value={filter.categoryId}
-            onChange={e => onFilterChange({ ...filter, categoryId: e.target.value })}
+            onChange={e => {
+              const value = e.target.value;
+              // Pendo Track Event: task_filter_applied
+              if (typeof pendo !== 'undefined') {
+                pendo.track('task_filter_applied', {
+                  filter_type: 'category',
+                  filter_value: value,
+                });
+              }
+              onFilterChange({ ...filter, categoryId: value });
+            }}
           />
         </div>
 
@@ -97,7 +149,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={sortOptions}
             value={sort}
-            onChange={e => onSortChange(e.target.value as TaskSort)}
+            onChange={e => {
+              const value = e.target.value as TaskSort;
+              // Pendo Track Event: task_sort_changed
+              if (typeof pendo !== 'undefined') {
+                pendo.track('task_sort_changed', {
+                  sort_value: value,
+                  previous_sort_value: sort,
+                });
+              }
+              onSortChange(value);
+            }}
           />
         </div>
 

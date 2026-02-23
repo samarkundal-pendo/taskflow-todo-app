@@ -33,8 +33,9 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!quickTaskTitle.trim()) return;
 
+    const title = quickTaskTitle.trim();
     addTask({
-      title: quickTaskTitle.trim(),
+      title,
       description: '',
       status: 'pending',
       priority: 'medium',
@@ -44,6 +45,13 @@ export const Dashboard: React.FC = () => {
       reminder: 'none',
       subtasks: [],
     });
+
+    // Pendo Track Event: quick_task_created
+    if (typeof pendo !== 'undefined') {
+      pendo.track('quick_task_created', {
+        title_length: title.length,
+      });
+    }
 
     setQuickTaskTitle('');
     showToast('Task created successfully!', 'success');
