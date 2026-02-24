@@ -61,7 +61,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isSidebarOpen }) =
                     <h3 className="font-semibold text-gray-900">Notifications</h3>
                     {unreadCount > 0 && (
                       <button
-                        onClick={markAllAsRead}
+                        onClick={() => {
+                          // Pendo Track Event: all_notifications_marked_read
+                          window.pendo?.track('all_notifications_marked_read', {
+                            notificationCount: notifications.length,
+                            unreadCount,
+                          });
+                          markAllAsRead();
+                        }}
                         className="text-sm text-blue-500 hover:text-blue-600"
                       >
                         Mark all read

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -37,7 +37,21 @@ export const TasksPage: React.FC = () => {
     const currentSort = searchParams.get('sort');
     if (currentSort && currentSort !== 'createdAt') params.set('sort', currentSort);
     setSearchParams(params, { replace: true });
-  }, [searchParams, setSearchParams]);
+
+    // Pendo Track Event: task_filters_applied (only for non-search filter changes)
+    const filtersChanged =
+      newFilter.status !== filter.status ||
+      newFilter.priority !== filter.priority ||
+      newFilter.categoryId !== filter.categoryId;
+    if (filtersChanged) {
+      window.pendo?.track('task_filters_applied', {
+        statusFilter: newFilter.status,
+        priorityFilter: newFilter.priority,
+        categoryFilter: newFilter.categoryId,
+        sortOrder: currentSort || 'createdAt',
+      });
+    }
+  }, [searchParams, setSearchParams, filter]);
 
   const setSort = useCallback((newSort: TaskSort) => {
     const params = new URLSearchParams(searchParams);
@@ -47,7 +61,15 @@ export const TasksPage: React.FC = () => {
       params.delete('sort');
     }
     setSearchParams(params, { replace: true });
-  }, [searchParams, setSearchParams]);
+
+    // Pendo Track Event: task_filters_applied (sort change)
+    window.pendo?.track('task_filters_applied', {
+      statusFilter: filter.status,
+      priorityFilter: filter.priority,
+      categoryFilter: filter.categoryId,
+      sortOrder: newSort,
+    });
+  }, [searchParams, setSearchParams, filter]);
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
@@ -109,6 +131,32 @@ export const TasksPage: React.FC = () => {
 
     return result;
   }, [tasks, filter, sort]);
+
+  // Pendo Track Event: task_search_executed (debounced)
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSearchRef = useRef(filter.search);
+  useEffect(() => {
+    if (filter.search === prevSearchRef.current) return;
+    prevSearchRef.current = filter.search;
+
+    if (!filter.search) return;
+
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      window.pendo?.track('task_search_executed', {
+        searchQuery: filter.search.substring(0, 100),
+        resultsCount: filteredTasks.length,
+        activeStatusFilter: filter.status,
+        activePriorityFilter: filter.priority,
+        activeCategoryFilter: filter.categoryId,
+        activeSort: sort,
+      });
+    }, 500);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [filter.search, filter.status, filter.priority, filter.categoryId, sort, filteredTasks.length]);
 
   const handleToggleStatus = (taskId: string) => {
     toggleTaskStatus(taskId);
