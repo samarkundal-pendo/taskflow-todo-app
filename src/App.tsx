@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { TaskProvider } from './context/TaskContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -8,8 +9,13 @@ import { TasksPage } from './pages/TasksPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { TaskFormPage } from './pages/TaskFormPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { initializePendo } from './utils/pendoUtils';
 
 function App() {
+  useEffect(() => {
+    initializePendo();
+  }, []);
+
   return (
     <BrowserRouter>
       <TaskProvider>
