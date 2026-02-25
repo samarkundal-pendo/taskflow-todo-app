@@ -58,17 +58,61 @@ export const TaskDetailPage: React.FC = () => {
 
   const handleToggleStatus = () => {
     toggleTaskStatus(task.id);
-    showToast(
-      task.status === 'pending' ? 'Task completed!' : 'Task marked as pending',
-      'success'
-    );
+    if (task.status === 'pending') {
+      if (typeof pendo !== 'undefined') {
+        pendo.track("task_completed", {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadDueDate: !!task.dueDate,
+          wasOverdue: isOverdue(task.dueDate, task.dueTime, task.status),
+          subtaskCount: task.subtasks.length,
+          completedSubtasks: task.subtasks.filter(s => s.completed).length,
+          source: "task_detail",
+        });
+      }
+      showToast('Task completed!', 'success');
+    } else {
+      if (typeof pendo !== 'undefined') {
+        pendo.track("task_uncompleted", {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          source: "task_detail",
+        });
+      }
+      showToast('Task marked as pending', 'success');
+    }
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const wasCompleted = subtask?.completed ?? false;
     toggleSubtask(task.id, subtaskId);
+    if (!wasCompleted && typeof pendo !== 'undefined') {
+      const currentCompleted = task.subtasks.filter(s => s.completed).length;
+      pendo.track("subtask_completed", {
+        taskId: task.id,
+        subtaskId: subtaskId,
+        completedSubtasks: currentCompleted + 1,
+        totalSubtasks: task.subtasks.length,
+        subtaskProgress: Math.round(((currentCompleted + 1) / task.subtasks.length) * 100),
+      });
+    }
   };
 
   const handleDelete = () => {
+    if (typeof pendo !== 'undefined') {
+      pendo.track("task_deleted", {
+        taskId: task.id,
+        taskStatus: task.status,
+        priority: task.priority,
+        categoryId: task.categoryId,
+        hadSubtasks: task.subtasks.length > 0,
+        wasOverdue: isOverdue(task.dueDate, task.dueTime, task.status),
+        source: "task_detail",
+      });
+    }
     deleteTask(task.id);
     showToast('Task deleted', 'success');
     navigate('/tasks');

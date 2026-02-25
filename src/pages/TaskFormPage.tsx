@@ -43,10 +43,39 @@ export const TaskFormPage: React.FC = () => {
         ...taskData,
         updatedAt: new Date().toISOString(),
       });
+      if (typeof pendo !== 'undefined') {
+        const fieldsChanged: string[] = [];
+        if (existingTask.title !== taskData.title) fieldsChanged.push('title');
+        if (existingTask.description !== taskData.description) fieldsChanged.push('description');
+        if (existingTask.priority !== taskData.priority) fieldsChanged.push('priority');
+        if (existingTask.categoryId !== taskData.categoryId) fieldsChanged.push('categoryId');
+        if (existingTask.dueDate !== taskData.dueDate) fieldsChanged.push('dueDate');
+        if (existingTask.reminder !== taskData.reminder) fieldsChanged.push('reminder');
+        pendo.track("task_updated", {
+          taskId: existingTask.id,
+          priority: taskData.priority,
+          categoryId: taskData.categoryId,
+          hasDueDate: !!taskData.dueDate,
+          reminder: taskData.reminder,
+          subtaskCount: taskData.subtasks.length,
+          fieldsChanged: fieldsChanged.join(","),
+        });
+      }
       showToast('Task updated successfully!', 'success');
       navigate(`/tasks/${existingTask.id}`);
     } else {
       addTask(taskData);
+      if (typeof pendo !== 'undefined') {
+        pendo.track("task_created", {
+          priority: taskData.priority,
+          categoryId: taskData.categoryId,
+          hasDescription: !!taskData.description,
+          hasDueDate: !!taskData.dueDate,
+          hasDueTime: !!taskData.dueTime,
+          reminder: taskData.reminder,
+          subtaskCount: taskData.subtasks.length,
+        });
+      }
       showToast('Task created successfully!', 'success');
       navigate('/tasks');
     }

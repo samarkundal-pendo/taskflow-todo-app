@@ -33,33 +33,65 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!quickTaskTitle.trim()) return;
 
+    const defaultCategoryId = categories[0]?.id || 'other';
     addTask({
       title: quickTaskTitle.trim(),
       description: '',
       status: 'pending',
       priority: 'medium',
-      categoryId: categories[0]?.id || 'other',
+      categoryId: defaultCategoryId,
       dueDate: null,
       dueTime: null,
       reminder: 'none',
       subtasks: [],
     });
 
+    if (typeof pendo !== 'undefined') {
+      pendo.track("task_quick_created", {
+        titleLength: quickTaskTitle.trim().length,
+        defaultCategoryId: defaultCategoryId,
+      });
+    }
+
     setQuickTaskTitle('');
     showToast('Task created successfully!', 'success');
   };
 
   const handleToggleStatus = (taskId: string) => {
-    toggleTaskStatus(taskId);
     const task = tasks.find(t => t.id === taskId);
+    toggleTaskStatus(taskId);
     if (task?.status === 'pending') {
+      if (typeof pendo !== 'undefined') {
+        pendo.track("task_completed", {
+          taskId: taskId,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadDueDate: !!task.dueDate,
+          wasOverdue: isOverdue(task.dueDate, task.dueTime, task.status),
+          subtaskCount: task.subtasks.length,
+          completedSubtasks: task.subtasks.filter(s => s.completed).length,
+          source: "dashboard",
+        });
+      }
       showToast('Task completed!', 'success');
     }
   };
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const task = tasks.find(t => t.id === deleteTaskId);
       deleteTask(deleteTaskId);
+      if (typeof pendo !== 'undefined' && task) {
+        pendo.track("task_deleted", {
+          taskId: deleteTaskId,
+          taskStatus: task.status,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadSubtasks: task.subtasks.length > 0,
+          wasOverdue: isOverdue(task.dueDate, task.dueTime, task.status),
+          source: "dashboard",
+        });
+      }
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
     }
