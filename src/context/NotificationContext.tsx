@@ -98,6 +98,18 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (task.status === 'pending') {
           // Check for reminder
           if (shouldTriggerReminder(task.dueDate, task.dueTime, task.reminder, task.reminderTriggered)) {
+            const browserNotificationShown = 'Notification' in window && Notification.permission === 'granted';
+
+            pendo.track("reminder_triggered", {
+              task_id: task.id,
+              task_priority: task.priority,
+              reminder_type: task.reminder,
+              browser_notification_permission: 'Notification' in window ? Notification.permission : 'unsupported',
+              browser_notification_shown: browserNotificationShown,
+              due_date: task.dueDate,
+              due_time: task.dueTime,
+            });
+
             addNotification(
               task.id,
               task.title,
