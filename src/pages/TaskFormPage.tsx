@@ -43,10 +43,35 @@ export const TaskFormPage: React.FC = () => {
         ...taskData,
         updatedAt: new Date().toISOString(),
       });
+
+      pendo.track('task_updated', {
+        priority: taskData.priority,
+        categoryId: taskData.categoryId,
+        has_due_date: !!taskData.dueDate,
+        has_due_time: !!taskData.dueTime,
+        reminder: taskData.reminder,
+        subtask_count: taskData.subtasks.length,
+        description_length: taskData.description.length,
+        priority_changed: taskData.priority !== existingTask.priority,
+        category_changed: taskData.categoryId !== existingTask.categoryId,
+        due_date_changed: taskData.dueDate !== existingTask.dueDate,
+      });
+
       showToast('Task updated successfully!', 'success');
       navigate(`/tasks/${existingTask.id}`);
     } else {
       addTask(taskData);
+
+      pendo.track('task_created', {
+        priority: taskData.priority,
+        categoryId: taskData.categoryId,
+        has_due_date: !!taskData.dueDate,
+        has_due_time: !!taskData.dueTime,
+        reminder: taskData.reminder,
+        subtask_count: taskData.subtasks.length,
+        description_length: taskData.description.length,
+      });
+
       showToast('Task created successfully!', 'success');
       navigate('/tasks');
     }
