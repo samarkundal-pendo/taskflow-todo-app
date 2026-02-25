@@ -29,6 +29,23 @@ export const TasksPage: React.FC = () => {
 
   // Update URL when filter changes
   const setFilter = useCallback((newFilter: TaskFilter) => {
+    // Pendo Track Event: task_filters_applied (only for non-search filter changes)
+    const currentStatus = (searchParams.get('status') as TaskFilter['status']) || 'all';
+    const currentPriority = (searchParams.get('priority') as TaskFilter['priority']) || 'all';
+    const currentCategory = searchParams.get('category') || 'all';
+    if (
+      newFilter.status !== currentStatus ||
+      newFilter.priority !== currentPriority ||
+      newFilter.categoryId !== currentCategory
+    ) {
+      (window as any).pendo?.track("task_filters_applied", {
+        statusFilter: newFilter.status,
+        priorityFilter: newFilter.priority,
+        categoryFilter: newFilter.categoryId,
+        sortBy: searchParams.get('sort') || 'createdAt',
+      });
+    }
+
     const params = new URLSearchParams();
     if (newFilter.status !== 'all') params.set('status', newFilter.status);
     if (newFilter.priority !== 'all') params.set('priority', newFilter.priority);
@@ -40,6 +57,14 @@ export const TasksPage: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const setSort = useCallback((newSort: TaskSort) => {
+    // Pendo Track Event: task_filters_applied (sort change)
+    (window as any).pendo?.track("task_filters_applied", {
+      statusFilter: searchParams.get('status') || 'all',
+      priorityFilter: searchParams.get('priority') || 'all',
+      categoryFilter: searchParams.get('category') || 'all',
+      sortBy: newSort,
+    });
+
     const params = new URLSearchParams(searchParams);
     if (newSort !== 'createdAt') {
       params.set('sort', newSort);
