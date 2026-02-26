@@ -65,10 +65,37 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const subtaskIndex = task.subtasks.findIndex(s => s.id === subtaskId);
+    const currentCompleted = task.subtasks.filter(s => s.completed).length;
+
+    // Pendo Track Event: subtask_completed (only when toggling to completed)
+    if (subtask && !subtask.completed) {
+      const completedAfter = currentCompleted + 1;
+      (window as any).pendo?.track('subtask_completed', {
+        parent_task_id: task.id,
+        parent_task_priority: task.priority,
+        subtask_index: subtaskIndex,
+        total_subtasks: task.subtasks.length,
+        completed_subtasks_after: completedAfter,
+        subtask_progress_percent: Math.round((completedAfter / task.subtasks.length) * 100),
+      });
+    }
+
     toggleSubtask(task.id, subtaskId);
   };
 
   const handleDelete = () => {
+    // Pendo Track Event: task_deleted
+    (window as any).pendo?.track('task_deleted', {
+      task_priority: task.priority,
+      task_category_id: task.categoryId,
+      task_status: task.status,
+      had_due_date: !!task.dueDate,
+      was_overdue: overdue,
+      subtask_count: task.subtasks.length,
+      source_page: 'task_detail',
+    });
     deleteTask(task.id);
     showToast('Task deleted', 'success');
     navigate('/tasks');

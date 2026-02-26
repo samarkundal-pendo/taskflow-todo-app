@@ -21,6 +21,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   onSortChange,
   onClearFilters,
 }) => {
+  const handleFilterChange = (newFilter: TaskFilter) => {
+    onFilterChange(newFilter);
+    // Pendo Track Event: tasks_filtered
+    (window as any).pendo?.track('tasks_filtered', {
+      status_filter: newFilter.status,
+      priority_filter: newFilter.priority,
+      category_filter: newFilter.categoryId,
+      sort_by: sort,
+    });
+  };
+
   const hasActiveFilters =
     filter.status !== 'all' ||
     filter.priority !== 'all' ||
@@ -73,7 +84,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={statusOptions}
             value={filter.status}
-            onChange={e => onFilterChange({ ...filter, status: e.target.value as TaskFilter['status'] })}
+            onChange={e => handleFilterChange({ ...filter, status: e.target.value as TaskFilter['status'] })}
           />
         </div>
 
@@ -81,7 +92,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={priorityOptions}
             value={filter.priority}
-            onChange={e => onFilterChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
+            onChange={e => handleFilterChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
           />
         </div>
 
@@ -89,7 +100,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={categoryOptions}
             value={filter.categoryId}
-            onChange={e => onFilterChange({ ...filter, categoryId: e.target.value })}
+            onChange={e => handleFilterChange({ ...filter, categoryId: e.target.value })}
           />
         </div>
 
