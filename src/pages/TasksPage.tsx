@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -109,6 +109,30 @@ export const TasksPage: React.FC = () => {
 
     return result;
   }, [tasks, filter, sort]);
+
+  // Pendo Track: task_search_executed (debounced)
+  const isInitialRender = useRef(true);
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+    if (!filter.search) return;
+
+    const timer = setTimeout(() => {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_search_executed', {
+          query: filter.search,
+          resultsCount: filteredTasks.length,
+          activeStatusFilter: filter.status,
+          activePriorityFilter: filter.priority,
+          activeCategoryFilter: filter.categoryId,
+        });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [filter.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleStatus = (taskId: string) => {
     toggleTaskStatus(taskId);
