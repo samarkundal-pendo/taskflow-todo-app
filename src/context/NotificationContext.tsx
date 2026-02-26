@@ -104,6 +104,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               `Reminder: Task "${task.title}" is due soon!`,
               'reminder'
             );
+            (window as any).pendo?.track('reminder_triggered', {
+              taskId: task.id,
+              reminderType: task.reminder,
+              taskPriority: task.priority,
+              taskCategoryId: task.categoryId,
+            });
             markReminderTriggered(task.id);
           }
 
@@ -119,6 +125,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+              (window as any).pendo?.track('overdue_alert_triggered', {
+                taskId: task.id,
+                taskPriority: task.priority,
+                taskCategoryId: task.categoryId,
+                dueDate: task.dueDate,
+              });
             }
           }
         }
