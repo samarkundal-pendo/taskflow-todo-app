@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -111,20 +111,65 @@ export const TasksPage: React.FC = () => {
   }, [tasks, filter, sort]);
 
   const handleToggleStatus = (taskId: string) => {
-    toggleTaskStatus(taskId);
     const task = tasks.find(t => t.id === taskId);
+    toggleTaskStatus(taskId);
     if (task?.status === 'pending') {
+      (window as any).pendo?.track('task_completed', {
+        taskId: taskId,
+        priority: task.priority,
+        categoryId: task.categoryId,
+        wasOverdue: !!(task.dueDate && isOverdue(task.dueDate, task.dueTime, task.status)),
+        hadDueDate: !!task.dueDate,
+        subtaskCount: task.subtasks.length,
+        completedSubtaskCount: task.subtasks.filter(s => s.completed).length,
+        daysSinceCreation: Math.floor((Date.now() - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+      });
       showToast('Task completed!', 'success');
+    } else if (task?.status === 'completed') {
+      (window as any).pendo?.track('task_reopened', {
+        taskId: taskId,
+        priority: task.priority,
+        categoryId: task.categoryId,
+      });
     }
   };
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const task = tasks.find(t => t.id === deleteTaskId);
       deleteTask(deleteTaskId);
+      if (task) {
+        (window as any).pendo?.track('task_deleted', {
+          taskId: deleteTaskId,
+          taskStatus: task.status,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadSubtasks: task.subtasks.length > 0,
+        });
+      }
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
     }
   };
+
+  // Track search queries with debounce
+  useEffect(() => {
+    if (!filter.search) return;
+    const timer = setTimeout(() => {
+      (window as any).pendo?.track('task_searched', {
+        searchQuery: filter.search,
+        resultsCount: filteredTasks.length,
+        totalTasks: tasks.length,
+        activeFilters: [
+          filter.status !== 'all' ? `status:${filter.status}` : '',
+          filter.priority !== 'all' ? `priority:${filter.priority}` : '',
+          filter.categoryId !== 'all' ? `category:${filter.categoryId}` : '',
+        ].filter(Boolean).join(','),
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter.search]);
 
   const handleClearFilters = () => {
     setFilter({
