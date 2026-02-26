@@ -9,6 +9,7 @@ interface NotificationContextValue {
   notifications: AppNotification[];
   unreadCount: number;
   addNotification: (taskId: string, taskTitle: string, message: string, type: 'reminder' | 'overdue') => void;
+  removeNotification: (id: string) => void;
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
@@ -77,7 +78,27 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const removeNotification = (id: string) => {
+    const notification = notifications.find(n => n.id === id);
+    if (notification) {
+      (window as any).pendo?.track('notification_dismissed', {
+        notificationId: id,
+        notificationType: notification.type,
+        taskId: notification.taskId,
+        timeSinceNotification: Math.floor((Date.now() - new Date(notification.createdAt).getTime()) / 1000),
+      });
+    }
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   const clearNotifications = () => {
+    const reminderCount = notifications.filter(n => n.type === 'reminder').length;
+    const overdueCount = notifications.filter(n => n.type === 'overdue').length;
+    (window as any).pendo?.track('all_notifications_cleared', {
+      notificationCount: notifications.length,
+      reminderCount: reminderCount,
+      overdueCount: overdueCount,
+    });
     setNotifications([]);
   };
 
@@ -104,6 +125,14 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               `Reminder: Task "${task.title}" is due soon!`,
               'reminder'
             );
+            (window as any).pendo?.track('reminder_triggered', {
+              taskId: task.id,
+              taskTitle: task.title,
+              reminderType: task.reminder,
+              dueDate: task.dueDate,
+              dueTime: task.dueTime,
+              priority: task.priority,
+            });
             markReminderTriggered(task.id);
           }
 
@@ -119,6 +148,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+              (window as any).pendo?.track('overdue_notification_triggered', {
+                taskId: task.id,
+                taskTitle: task.title,
+                dueDate: task.dueDate,
+                dueTime: task.dueTime,
+                priority: task.priority,
+                categoryId: task.categoryId,
+                daysSinceCreation: Math.floor((Date.now() - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+              });
             }
           }
         }
@@ -142,6 +180,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         notifications,
         unreadCount,
         addNotification,
+        removeNotification,
         markAsRead,
         markAllAsRead,
         clearNotifications,

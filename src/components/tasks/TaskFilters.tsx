@@ -53,6 +53,18 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     { value: 'title', label: 'Alphabetical' },
   ];
 
+  const handleFilterWithTracking = (newFilter: TaskFilter) => {
+    onFilterChange(newFilter);
+    if (newFilter.status !== 'all' || newFilter.priority !== 'all' || newFilter.categoryId !== 'all') {
+      (window as any).pendo?.track('task_filtered', {
+        statusFilter: newFilter.status,
+        priorityFilter: newFilter.priority,
+        categoryFilter: newFilter.categoryId,
+        sortBy: sort,
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -73,7 +85,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={statusOptions}
             value={filter.status}
-            onChange={e => onFilterChange({ ...filter, status: e.target.value as TaskFilter['status'] })}
+            onChange={e => handleFilterWithTracking({ ...filter, status: e.target.value as TaskFilter['status'] })}
           />
         </div>
 
@@ -81,7 +93,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={priorityOptions}
             value={filter.priority}
-            onChange={e => onFilterChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
+            onChange={e => handleFilterWithTracking({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
           />
         </div>
 
@@ -89,7 +101,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <Select
             options={categoryOptions}
             value={filter.categoryId}
-            onChange={e => onFilterChange({ ...filter, categoryId: e.target.value })}
+            onChange={e => handleFilterWithTracking({ ...filter, categoryId: e.target.value })}
           />
         </div>
 
