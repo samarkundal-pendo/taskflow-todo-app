@@ -104,6 +104,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               `Reminder: Task "${task.title}" is due soon!`,
               'reminder'
             );
+            // Pendo Track Event: reminder_triggered
+            if ((window as any).pendo) {
+              (window as any).pendo.track('reminder_triggered', {
+                task_id: task.id,
+                task_title: task.title,
+                reminder_type: task.reminder,
+                notification_permission: 'Notification' in window ? Notification.permission : 'unsupported',
+                browser_notification_sent: 'Notification' in window && Notification.permission === 'granted',
+              });
+            }
             markReminderTriggered(task.id);
           }
 
@@ -119,6 +129,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+              // Pendo Track Event: overdue_task_detected
+              if ((window as any).pendo) {
+                (window as any).pendo.track('overdue_task_detected', {
+                  task_id: task.id,
+                  task_title: task.title,
+                  priority: task.priority,
+                  categoryId: task.categoryId,
+                  due_date: task.dueDate,
+                });
+              }
             }
           }
         }
