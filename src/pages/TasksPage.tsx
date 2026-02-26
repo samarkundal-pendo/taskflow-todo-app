@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -29,6 +29,10 @@ export const TasksPage: React.FC = () => {
 
   // Update URL when filter changes
   const setFilter = useCallback((newFilter: TaskFilter) => {
+    const prevStatus = (searchParams.get('status') as TaskFilter['status']) || 'all';
+    const prevPriority = (searchParams.get('priority') as TaskFilter['priority']) || 'all';
+    const prevCategoryId = searchParams.get('category') || 'all';
+
     const params = new URLSearchParams();
     if (newFilter.status !== 'all') params.set('status', newFilter.status);
     if (newFilter.priority !== 'all') params.set('priority', newFilter.priority);
@@ -37,6 +41,15 @@ export const TasksPage: React.FC = () => {
     const currentSort = searchParams.get('sort');
     if (currentSort && currentSort !== 'createdAt') params.set('sort', currentSort);
     setSearchParams(params, { replace: true });
+
+    if (newFilter.status !== prevStatus || newFilter.priority !== prevPriority || newFilter.categoryId !== prevCategoryId) {
+      (window as any).pendo?.track('task_filters_applied', {
+        statusFilter: newFilter.status,
+        priorityFilter: newFilter.priority,
+        categoryFilter: newFilter.categoryId,
+        sortBy: currentSort || 'createdAt',
+      });
+    }
   }, [searchParams, setSearchParams]);
 
   const setSort = useCallback((newSort: TaskSort) => {
@@ -110,6 +123,23 @@ export const TasksPage: React.FC = () => {
     return result;
   }, [tasks, filter, sort]);
 
+  // Debounced search tracking
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!filter.search) return;
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      (window as any).pendo?.track('task_search_executed', {
+        searchQuery: filter.search,
+        resultsCount: filteredTasks.length,
+        activeStatusFilter: filter.status,
+        activePriorityFilter: filter.priority,
+        activeCategoryFilter: filter.categoryId,
+      });
+    }, 500);
+    return () => clearTimeout(searchTimerRef.current);
+  }, [filter.search, filter.status, filter.priority, filter.categoryId, filteredTasks.length]);
+
   const handleToggleStatus = (taskId: string) => {
     toggleTaskStatus(taskId);
     const task = tasks.find(t => t.id === taskId);
@@ -120,6 +150,17 @@ export const TasksPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const taskToDelete = tasks.find(t => t.id === deleteTaskId);
+      if (taskToDelete) {
+        (window as any).pendo?.track('task_deleted', {
+          taskId: taskToDelete.id,
+          taskStatus: taskToDelete.status,
+          priority: taskToDelete.priority,
+          categoryId: taskToDelete.categoryId,
+          hadSubtasks: taskToDelete.subtasks.length > 0,
+          source: 'tasks_page',
+        });
+      }
       deleteTask(deleteTaskId);
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);

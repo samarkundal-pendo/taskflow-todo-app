@@ -33,16 +33,23 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!quickTaskTitle.trim()) return;
 
+    const defaultCategoryId = categories[0]?.id || 'other';
+
     addTask({
       title: quickTaskTitle.trim(),
       description: '',
       status: 'pending',
       priority: 'medium',
-      categoryId: categories[0]?.id || 'other',
+      categoryId: defaultCategoryId,
       dueDate: null,
       dueTime: null,
       reminder: 'none',
       subtasks: [],
+    });
+
+    (window as any).pendo?.track('quick_task_created', {
+      defaultCategoryId,
+      titleLength: quickTaskTitle.trim().length,
     });
 
     setQuickTaskTitle('');
@@ -59,6 +66,17 @@ export const Dashboard: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const taskToDelete = tasks.find(t => t.id === deleteTaskId);
+      if (taskToDelete) {
+        (window as any).pendo?.track('task_deleted', {
+          taskId: taskToDelete.id,
+          taskStatus: taskToDelete.status,
+          priority: taskToDelete.priority,
+          categoryId: taskToDelete.categoryId,
+          hadSubtasks: taskToDelete.subtasks.length > 0,
+          source: 'dashboard',
+        });
+      }
       deleteTask(deleteTaskId);
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
