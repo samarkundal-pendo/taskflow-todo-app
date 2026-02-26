@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, ReactN
 import { v4 as uuidv4 } from 'uuid';
 import { Task, Category } from '../types';
 import { storage } from '../utils/storage';
+import { isOverdue } from '../utils/dateUtils';
 
 interface TaskState {
   tasks: Task[];
@@ -184,10 +185,51 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const deleteTask = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+
+    if (task) {
+      pendo.track('task_deleted', {
+        taskStatus: task.status,
+        priority: task.priority,
+        categoryId: task.categoryId,
+        hadSubtasks: task.subtasks.length > 0,
+        subtaskCount: task.subtasks.length,
+      });
+    }
+
     dispatch({ type: 'DELETE_TASK', payload: taskId });
   };
 
   const toggleTaskStatus = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+
+    if (task) {
+      if (task.status === 'pending') {
+        const completedSubtaskCount = task.subtasks.filter(s => s.completed).length;
+        const timeToCompleteMs = Date.now() - new Date(task.createdAt).getTime();
+
+        pendo.track('task_completed', {
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadDueDate: !!task.dueDate,
+          wasOverdue: isOverdue(task.dueDate, task.dueTime, task.status),
+          subtaskCount: task.subtasks.length,
+          completedSubtaskCount,
+          timeToCompleteMs,
+        });
+      } else {
+        const timeInCompletedStateMs = task.completedAt
+          ? Date.now() - new Date(task.completedAt).getTime()
+          : 0;
+
+        pendo.track('task_reopened', {
+          priority: task.priority,
+          categoryId: task.categoryId,
+          timeInCompletedStateMs,
+        });
+      }
+    }
+
     dispatch({ type: 'TOGGLE_TASK_STATUS', payload: taskId });
   };
 

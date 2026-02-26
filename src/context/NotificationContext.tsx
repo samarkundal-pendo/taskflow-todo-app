@@ -74,6 +74,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const markAllAsRead = () => {
+    const unreadCount = notifications.filter(n => !n.read).length;
+
+    pendo.track('all_notifications_marked_read', {
+      unreadCount,
+      totalNotificationCount: notifications.length,
+    });
+
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
@@ -105,6 +112,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            pendo.track('reminder_triggered', {
+              reminderType: task.reminder,
+              taskPriority: task.priority,
+              taskCategoryId: task.categoryId,
+            });
           }
 
           // Check for overdue (only notify once per task per session)
@@ -119,6 +132,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+
+              pendo.track('overdue_alert_triggered', {
+                taskPriority: task.priority,
+                taskCategoryId: task.categoryId,
+              });
             }
           }
         }
