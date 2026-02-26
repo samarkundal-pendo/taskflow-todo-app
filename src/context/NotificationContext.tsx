@@ -78,16 +78,31 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const clearNotifications = () => {
+    // Pendo Track Event: all_notifications_cleared
+    (window as any).pendo?.track('all_notifications_cleared', {
+      notifications_cleared_count: notifications.length,
+      unread_count_at_clear: notifications.filter(n => !n.read).length,
+    });
     setNotifications([]);
   };
 
   const requestPermission = async (): Promise<boolean> => {
     if (!('Notification' in window)) {
+      // Pendo Track Event: notification_permission_requested
+      (window as any).pendo?.track('notification_permission_requested', {
+        permission_result: 'unsupported',
+        browser_supports_notifications: false,
+      });
       return false;
     }
 
     const permission = await Notification.requestPermission();
     setPermissionStatus(permission);
+    // Pendo Track Event: notification_permission_requested
+    (window as any).pendo?.track('notification_permission_requested', {
+      permission_result: permission,
+      browser_supports_notifications: true,
+    });
     return permission === 'granted';
   };
 
@@ -105,6 +120,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+            // Pendo Track Event: reminder_triggered
+            (window as any).pendo?.track('reminder_triggered', {
+              task_id: task.id,
+              task_priority: task.priority,
+              reminder_type: task.reminder,
+              notification_permission_status: 'Notification' in window ? Notification.permission : 'unsupported',
+            });
           }
 
           // Check for overdue (only notify once per task per session)
@@ -119,6 +141,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+              // Pendo Track Event: overdue_notification_triggered
+              (window as any).pendo?.track('overdue_notification_triggered', {
+                task_id: task.id,
+                task_priority: task.priority,
+                task_category_id: task.categoryId,
+              });
             }
           }
         }
