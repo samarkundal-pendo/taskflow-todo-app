@@ -8,12 +8,14 @@ import { TasksPage } from './pages/TasksPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { TaskFormPage } from './pages/TaskFormPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { PendoInitializer } from './components/PendoInitializer';
 
 function App() {
   return (
     <BrowserRouter>
       <TaskProvider>
         <NotificationProvider>
+          <PendoInitializer />
           <ToastProvider>
             <Routes>
               <Route path="/" element={<Layout />}>
