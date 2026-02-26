@@ -69,6 +69,18 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleDelete = () => {
+    // Pendo Track: task_deleted
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_deleted', {
+        taskStatus: task.status,
+        priority: task.priority,
+        categoryId: task.categoryId,
+        hadDueDate: !!task.dueDate,
+        subtaskCount: task.subtasks.length,
+        source: 'task_detail',
+      });
+    }
+
     deleteTask(task.id);
     showToast('Task deleted', 'success');
     navigate('/tasks');
