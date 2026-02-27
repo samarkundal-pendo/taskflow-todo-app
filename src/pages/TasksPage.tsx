@@ -29,6 +29,10 @@ export const TasksPage: React.FC = () => {
 
   // Update URL when filter changes
   const setFilter = useCallback((newFilter: TaskFilter) => {
+    const prevStatus = (searchParams.get('status') || 'all');
+    const prevPriority = (searchParams.get('priority') || 'all');
+    const prevCategory = (searchParams.get('category') || 'all');
+
     const params = new URLSearchParams();
     if (newFilter.status !== 'all') params.set('status', newFilter.status);
     if (newFilter.priority !== 'all') params.set('priority', newFilter.priority);
@@ -37,6 +41,20 @@ export const TasksPage: React.FC = () => {
     const currentSort = searchParams.get('sort');
     if (currentSort && currentSort !== 'createdAt') params.set('sort', currentSort);
     setSearchParams(params, { replace: true });
+
+    if (
+      typeof pendo !== 'undefined' &&
+      (newFilter.status !== prevStatus ||
+       newFilter.priority !== prevPriority ||
+       newFilter.categoryId !== prevCategory)
+    ) {
+      pendo.track('task_filters_applied', {
+        status_filter: newFilter.status,
+        priority_filter: newFilter.priority,
+        category_filter: newFilter.categoryId,
+        sort_by: currentSort || 'createdAt',
+      });
+    }
   }, [searchParams, setSearchParams]);
 
   const setSort = useCallback((newSort: TaskSort) => {
@@ -120,6 +138,18 @@ export const TasksPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const taskToDelete = tasks.find(t => t.id === deleteTaskId);
+      if (taskToDelete && typeof pendo !== 'undefined') {
+        pendo.track('task_deleted', {
+          task_id: deleteTaskId,
+          task_status: taskToDelete.status,
+          priority: taskToDelete.priority,
+          category_id: taskToDelete.categoryId,
+          had_subtasks: taskToDelete.subtasks.length > 0,
+          was_overdue: taskToDelete.status === 'pending' && isOverdue(taskToDelete.dueDate, taskToDelete.dueTime, taskToDelete.status),
+          source_page: 'tasks_list',
+        });
+      }
       deleteTask(deleteTaskId);
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);

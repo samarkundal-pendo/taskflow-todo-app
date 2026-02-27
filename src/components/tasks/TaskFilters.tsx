@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { TaskFilter, TaskSort, Category } from '../../types';
 import { Select } from '../common/Input';
@@ -26,6 +26,26 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     filter.priority !== 'all' ||
     filter.categoryId !== 'all' ||
     filter.search !== '';
+
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!filter.search) return;
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_search_executed', {
+          search_query: filter.search,
+          has_active_filters: filter.status !== 'all' || filter.priority !== 'all' || filter.categoryId !== 'all',
+          status_filter: filter.status,
+          priority_filter: filter.priority,
+          category_filter: filter.categoryId,
+        });
+      }
+    }, 500);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [filter.search, filter.status, filter.priority, filter.categoryId]);
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
