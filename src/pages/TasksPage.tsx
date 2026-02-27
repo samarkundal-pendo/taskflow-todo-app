@@ -157,6 +157,7 @@ export const TasksPage: React.FC = () => {
         filter={filter}
         sort={sort}
         categories={categories}
+        resultCount={filteredTasks.length}
         onFilterChange={setFilter}
         onSortChange={setSort}
         onClearFilters={handleClearFilters}

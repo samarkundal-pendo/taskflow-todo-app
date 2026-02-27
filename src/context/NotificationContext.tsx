@@ -105,6 +105,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            pendo?.track('reminder_triggered', {
+              task_priority: task.priority,
+              task_categoryId: task.categoryId,
+              reminder_type: task.reminder,
+              notification_permission_status: permissionStatus,
+              time_until_due: task.dueDate
+                ? Math.round((new Date(task.dueDate).getTime() - Date.now()) / 60000)
+                : null,
+            });
           }
 
           // Check for overdue (only notify once per task per session)
