@@ -105,6 +105,19 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            // Pendo Track: reminder_triggered
+            if (typeof window !== 'undefined' && (window as any).pendo) {
+              (window as any).pendo.track('reminder_triggered', {
+                taskId: task.id,
+                taskTitle: task.title,
+                reminderType: task.reminder,
+                dueDate: task.dueDate,
+                dueTime: task.dueTime,
+                taskPriority: task.priority,
+                taskCategoryId: task.categoryId,
+              });
+            }
           }
 
           // Check for overdue (only notify once per task per session)
@@ -119,6 +132,18 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+
+              // Pendo Track: overdue_notification_triggered
+              if (typeof window !== 'undefined' && (window as any).pendo) {
+                (window as any).pendo.track('overdue_notification_triggered', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  dueDate: task.dueDate,
+                  dueTime: task.dueTime,
+                  taskPriority: task.priority,
+                  taskCategoryId: task.categoryId,
+                });
+              }
             }
           }
         }
