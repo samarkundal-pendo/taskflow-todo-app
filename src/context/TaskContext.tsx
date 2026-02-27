@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, ReactN
 import { v4 as uuidv4 } from 'uuid';
 import { Task, Category } from '../types';
 import { storage } from '../utils/storage';
+import { isOverdue } from '../utils/dateUtils';
 
 interface TaskState {
   tasks: Task[];
@@ -188,6 +189,19 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const toggleTaskStatus = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task && task.status === 'pending' && typeof pendo !== 'undefined') {
+      const completedSubtasks = task.subtasks.filter(s => s.completed).length;
+      pendo.track('task_completed', {
+        task_id: task.id,
+        priority: task.priority,
+        category_id: task.categoryId,
+        was_overdue: isOverdue(task.dueDate, task.dueTime, task.status),
+        had_due_date: !!task.dueDate,
+        subtask_count: task.subtasks.length,
+        completed_subtask_count: completedSubtasks,
+      });
+    }
     dispatch({ type: 'TOGGLE_TASK_STATUS', payload: taskId });
   };
 
