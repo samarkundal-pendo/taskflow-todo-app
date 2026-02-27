@@ -45,6 +45,20 @@ export const Dashboard: React.FC = () => {
       subtasks: [],
     });
 
+    // Pendo Track: task_created (quick-add)
+    if (typeof window !== 'undefined' && (window as any).pendo) {
+      (window as any).pendo.track('task_created', {
+        priority: 'medium',
+        categoryId: categories[0]?.id || 'other',
+        hasDueDate: false,
+        hasDueTime: false,
+        reminderType: 'none',
+        subtaskCount: 0,
+        creationMethod: 'quick_add',
+        descriptionLength: 0,
+      });
+    }
+
     setQuickTaskTitle('');
     showToast('Task created successfully!', 'success');
   };
@@ -59,6 +73,20 @@ export const Dashboard: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      // Pendo Track: task_deleted
+      const taskToDelete = tasks.find(t => t.id === deleteTaskId);
+      if (taskToDelete && typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('task_deleted', {
+          taskStatus: taskToDelete.status,
+          priority: taskToDelete.priority,
+          categoryId: taskToDelete.categoryId,
+          subtaskCount: taskToDelete.subtasks.length,
+          hadDueDate: !!taskToDelete.dueDate,
+          wasOverdue: taskToDelete.dueDate ? new Date(taskToDelete.dueDate) < new Date() : false,
+          deletionSource: 'dashboard',
+        });
+      }
+
       deleteTask(deleteTaskId);
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
