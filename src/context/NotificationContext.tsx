@@ -98,6 +98,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (task.status === 'pending') {
           // Check for reminder
           if (shouldTriggerReminder(task.dueDate, task.dueTime, task.reminder, task.reminderTriggered)) {
+            if (typeof pendo !== 'undefined') {
+              pendo.track('reminder_triggered', {
+                taskId: task.id,
+                reminderType: task.reminder,
+                taskPriority: task.priority,
+                isOverdue: isOverdue(task.dueDate, task.dueTime, task.status),
+              });
+            }
+
             addNotification(
               task.id,
               task.title,
