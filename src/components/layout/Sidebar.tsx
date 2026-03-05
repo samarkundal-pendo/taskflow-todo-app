@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, FolderOpen, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, FolderOpen, ClipboardList, BarChart3 } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
 import { isOverdue } from '../../utils/dateUtils';
 
@@ -23,6 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/tasks', label: 'All Tasks', icon: CheckSquare, count: pendingCount },
     { path: '/categories', label: 'Categories', icon: FolderOpen, count: categories.length },
     { path: '/review', label: 'Review', icon: ClipboardList },
+    { path: '/stats', label: 'Stats', icon: BarChart3 },
   ];
 
   const NavItem: React.FC<{

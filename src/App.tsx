@@ -9,6 +9,7 @@ import { TaskDetailPage } from './pages/TaskDetailPage';
 import { TaskFormPage } from './pages/TaskFormPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { ReviewPage } from './pages/ReviewPage';
+import { StatsPage } from './pages/StatsPage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
                 <Route path="tasks/:id/edit" element={<TaskFormPage />} />
                 <Route path="categories" element={<CategoriesPage />} />
                 <Route path="review" element={<ReviewPage />} />
+                <Route path="stats" element={<StatsPage />} />
               </Route>
             </Routes>
           </ToastProvider>
