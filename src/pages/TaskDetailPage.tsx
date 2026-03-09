@@ -57,18 +57,77 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleStatus = () => {
+    const wasPending = task.status === 'pending';
     toggleTaskStatus(task.id);
+
+    if (typeof pendo !== 'undefined') {
+      if (wasPending) {
+        // Track task completed
+        const daysToComplete = task.createdAt
+          ? Math.round((Date.now() - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+          : undefined;
+
+        pendo.track('task_completed', {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          wasOverdue: overdue,
+          hadDueDate: !!task.dueDate,
+          subtaskCount: task.subtasks.length,
+          completedSubtasks: completedSubtasks,
+          completionSource: 'detail_page',
+          daysToComplete: daysToComplete,
+        });
+      } else {
+        // Track task restored
+        pendo.track('task_restored', {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          restorationSource: 'detail_page',
+        });
+      }
+    }
+
     showToast(
-      task.status === 'pending' ? 'Task completed!' : 'Task marked as pending',
+      wasPending ? 'Task completed!' : 'Task marked as pending',
       'success'
     );
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const isCompleting = subtask && !subtask.completed;
+
     toggleSubtask(task.id, subtaskId);
+
+    // Track subtask completed (only when marking as complete, not unchecking)
+    if (isCompleting && typeof pendo !== 'undefined') {
+      const newCompletedCount = completedSubtasks + 1;
+      pendo.track('subtask_completed', {
+        taskId: task.id,
+        subtaskId: subtaskId,
+        totalSubtasks: task.subtasks.length,
+        completedSubtasks: newCompletedCount,
+        progressPercentage: Math.round((newCompletedCount / task.subtasks.length) * 100),
+      });
+    }
   };
 
   const handleDelete = () => {
+    // Track task deleted event before deletion
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_deleted', {
+        taskId: task.id,
+        priority: task.priority,
+        categoryId: task.categoryId,
+        taskStatus: task.status,
+        hadSubtasks: task.subtasks.length > 0,
+        wasOverdue: overdue,
+        deletionSource: 'detail_page',
+      });
+    }
+
     deleteTask(task.id);
     showToast('Task deleted', 'success');
     navigate('/tasks');
