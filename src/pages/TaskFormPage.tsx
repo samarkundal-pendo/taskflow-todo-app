@@ -37,16 +37,57 @@ export const TaskFormPage: React.FC = () => {
   const handleSubmit = (
     taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'reminderTriggered'>
   ) => {
+    const category = categories.find(c => c.id === taskData.categoryId);
+
     if (isEdit && existingTask) {
       updateTask({
         ...existingTask,
         ...taskData,
         updatedAt: new Date().toISOString(),
       });
+
+      // Track task updated event
+      if (typeof pendo !== 'undefined') {
+        const fieldsChanged: string[] = [];
+        if (existingTask.title !== taskData.title) fieldsChanged.push('title');
+        if (existingTask.description !== taskData.description) fieldsChanged.push('description');
+        if (existingTask.priority !== taskData.priority) fieldsChanged.push('priority');
+        if (existingTask.categoryId !== taskData.categoryId) fieldsChanged.push('category');
+        if (existingTask.dueDate !== taskData.dueDate) fieldsChanged.push('dueDate');
+        if (existingTask.reminder !== taskData.reminder) fieldsChanged.push('reminder');
+        if (existingTask.subtasks.length !== taskData.subtasks.length) fieldsChanged.push('subtasks');
+
+        pendo.track('task_updated', {
+          taskId: existingTask.id,
+          priority: taskData.priority,
+          categoryId: taskData.categoryId,
+          hasDueDate: !!taskData.dueDate,
+          hasReminder: taskData.reminder !== 'none',
+          subtaskCount: taskData.subtasks.length,
+          fieldsChanged: fieldsChanged.join(','),
+        });
+      }
+
       showToast('Task updated successfully!', 'success');
       navigate(`/tasks/${existingTask.id}`);
     } else {
       addTask(taskData);
+
+      // Track task created event
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_created', {
+          title: taskData.title,
+          priority: taskData.priority,
+          categoryId: taskData.categoryId,
+          categoryName: category?.name || 'unknown',
+          hasDueDate: !!taskData.dueDate,
+          hasReminder: taskData.reminder !== 'none',
+          reminderType: taskData.reminder,
+          subtaskCount: taskData.subtasks.length,
+          hasDescription: !!taskData.description,
+        });
+      }
+
       showToast('Task created successfully!', 'success');
       navigate('/tasks');
     }

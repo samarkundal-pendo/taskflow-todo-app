@@ -120,6 +120,21 @@ export const TasksPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const taskToDelete = tasks.find(t => t.id === deleteTaskId);
+
+      // Track task deleted event before deletion
+      if (taskToDelete && typeof pendo !== 'undefined') {
+        pendo.track('task_deleted', {
+          taskId: taskToDelete.id,
+          priority: taskToDelete.priority,
+          categoryId: taskToDelete.categoryId,
+          taskStatus: taskToDelete.status,
+          hadSubtasks: taskToDelete.subtasks.length > 0,
+          wasOverdue: isOverdue(taskToDelete.dueDate, taskToDelete.dueTime, taskToDelete.status),
+          deletionSource: 'tasks_list',
+        });
+      }
+
       deleteTask(deleteTaskId);
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
@@ -127,6 +142,18 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    // Track filters cleared event
+    if (typeof pendo !== 'undefined') {
+      pendo.track('filters_cleared', {
+        previousFilters: JSON.stringify({
+          status: filter.status,
+          priority: filter.priority,
+          categoryId: filter.categoryId,
+          search: filter.search ? 'has_search' : 'none',
+        }),
+      });
+    }
+
     setFilter({
       status: 'all',
       priority: 'all',
