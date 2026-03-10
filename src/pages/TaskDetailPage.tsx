@@ -65,7 +65,22 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const willBeCompleted = subtask ? !subtask.completed : false;
+    const newCompletedCount = completedSubtasks + (willBeCompleted ? 1 : -1);
+    const totalSubtasks = task.subtasks.length;
+    const progressPct = totalSubtasks > 0 ? Math.round((newCompletedCount / totalSubtasks) * 100) : 0;
+
     toggleSubtask(task.id, subtaskId);
+
+    pendo.track('subtask_progress_updated', {
+      subtask_completed: willBeCompleted,
+      completed_subtasks: newCompletedCount,
+      total_subtasks: totalSubtasks,
+      progress_percentage: progressPct,
+      all_subtasks_complete: newCompletedCount === totalSubtasks,
+      task_priority: task.priority,
+    });
   };
 
   const handleDelete = () => {
