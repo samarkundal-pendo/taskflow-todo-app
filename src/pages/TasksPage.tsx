@@ -111,15 +111,42 @@ export const TasksPage: React.FC = () => {
   }, [tasks, filter, sort]);
 
   const handleToggleStatus = (taskId: string) => {
-    toggleTaskStatus(taskId);
     const task = tasks.find(t => t.id === taskId);
+    toggleTaskStatus(taskId);
+
     if (task?.status === 'pending') {
+      if (typeof pendo !== 'undefined') {
+        const completedSubs = task.subtasks?.filter(s => s.completed).length || 0;
+        pendo.track('task_completed', {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadDueDate: !!task.dueDate,
+          wasOverdue: task.dueDate ? isOverdue(task.dueDate, task.dueTime, task.status) : false,
+          subtaskCount: task.subtasks?.length || 0,
+          completedSubtaskCount: completedSubs,
+          source: 'task_list',
+        });
+      }
       showToast('Task completed!', 'success');
     }
   };
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const task = tasks.find(t => t.id === deleteTaskId);
+
+      if (typeof pendo !== 'undefined' && task) {
+        pendo.track('task_deleted', {
+          taskId: task.id,
+          taskStatus: task.status,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadSubtasks: task.subtasks.length > 0,
+          source: 'task_list',
+        });
+      }
+
       deleteTask(deleteTaskId);
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
