@@ -57,6 +57,31 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleStatus = () => {
+    if (typeof pendo !== 'undefined') {
+      if (task.status === 'completed') {
+        pendo.track('task_reopened', {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          timeCompletedBeforeReopen: task.completedAt
+            ? Math.round((Date.now() - new Date(task.completedAt).getTime()) / 1000)
+            : null,
+        });
+      } else {
+        const completedSubs = task.subtasks.filter(s => s.completed).length;
+        pendo.track('task_completed', {
+          taskId: task.id,
+          priority: task.priority,
+          categoryId: task.categoryId,
+          hadDueDate: !!task.dueDate,
+          wasOverdue: task.dueDate ? isOverdue(task.dueDate, task.dueTime, task.status) : false,
+          subtaskCount: task.subtasks.length,
+          completedSubtaskCount: completedSubs,
+          source: 'task_detail',
+        });
+      }
+    }
+
     toggleTaskStatus(task.id);
     showToast(
       task.status === 'pending' ? 'Task completed!' : 'Task marked as pending',
@@ -65,6 +90,20 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const currentlyCompleted = task.subtasks.filter(s => s.completed).length;
+    const newCompleted = subtask?.completed ? currentlyCompleted - 1 : currentlyCompleted + 1;
+
+    if (typeof pendo !== 'undefined' && subtask && !subtask.completed) {
+      pendo.track('subtask_completed', {
+        taskId: task.id,
+        subtaskId: subtaskId,
+        totalSubtasks: task.subtasks.length,
+        completedSubtasks: newCompleted,
+        subtaskProgress: Math.round((newCompleted / task.subtasks.length) * 100),
+      });
+    }
+
     toggleSubtask(task.id, subtaskId);
   };
 

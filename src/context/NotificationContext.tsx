@@ -74,10 +74,22 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const markAllAsRead = () => {
+    if (typeof pendo !== 'undefined') {
+      pendo.track('all_notifications_marked_read', {
+        totalNotifications: notifications.length,
+        unreadCount: notifications.filter(n => !n.read).length,
+      });
+    }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const clearNotifications = () => {
+    if (typeof pendo !== 'undefined') {
+      pendo.track('all_notifications_cleared', {
+        totalNotificationsCleared: notifications.length,
+        unreadCountCleared: notifications.filter(n => !n.read).length,
+      });
+    }
     setNotifications([]);
   };
 
@@ -105,6 +117,17 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            if (typeof pendo !== 'undefined') {
+              pendo.track('reminder_triggered', {
+                taskId: task.id,
+                taskTitle: task.title,
+                reminderType: task.reminder,
+                priority: task.priority,
+                categoryId: task.categoryId,
+                dueDate: task.dueDate,
+              });
+            }
           }
 
           // Check for overdue (only notify once per task per session)
@@ -119,6 +142,20 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+
+              if (typeof pendo !== 'undefined') {
+                const daysOverdue = task.dueDate
+                  ? Math.floor((Date.now() - new Date(task.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+                  : 0;
+                pendo.track('overdue_notification_triggered', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  priority: task.priority,
+                  categoryId: task.categoryId,
+                  dueDate: task.dueDate,
+                  daysOverdue: daysOverdue,
+                });
+              }
             }
           }
         }
