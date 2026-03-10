@@ -58,18 +58,42 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    const previousValue = formData[name as keyof typeof formData];
     setFormData(prev => ({ ...prev, [name]: value }));
     // Clear error for this field
     setErrors(prev => prev.filter(err => err.field !== name));
+
+    // Track reminder set event
+    if (name === 'reminder' && value !== 'none' && value !== previousValue) {
+      if (typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('task_reminder_set', {
+          task_id: initialData?.id || 'new_task',
+          reminder_type: value,
+          has_due_date: !!formData.dueDate,
+          is_edit: isEdit
+        });
+      }
+    }
   };
 
   const handleAddSubtask = () => {
     if (newSubtask.trim()) {
+      const newSubtaskId = uuidv4();
       setSubtasks(prev => [
         ...prev,
-        { id: uuidv4(), title: newSubtask.trim(), completed: false },
+        { id: newSubtaskId, title: newSubtask.trim(), completed: false },
       ]);
       setNewSubtask('');
+
+      // Track subtask addition event
+      if (typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('subtask_added', {
+          task_id: initialData?.id || 'new_task',
+          subtask_id: newSubtaskId,
+          total_subtasks: subtasks.length + 1,
+          is_task_edit: isEdit
+        });
+      }
     }
   };
 
@@ -82,7 +106,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   const handleRemoveSubtask = (subtaskId: string) => {
+    const subtaskToRemove = subtasks.find(st => st.id === subtaskId);
     setSubtasks(prev => prev.filter(st => st.id !== subtaskId));
+
+    // Track subtask removal event
+    if (typeof window !== 'undefined' && (window as any).pendo && subtaskToRemove) {
+      (window as any).pendo.track('subtask_removed', {
+        task_id: initialData?.id || 'new_task',
+        subtask_id: subtaskId,
+        remaining_subtasks_count: subtasks.length - 1,
+        was_completed: subtaskToRemove.completed
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,6 +126,17 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     const validationErrors = validateTaskForm(formData, isEdit);
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
+
+      // Track validation error event
+      if (typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('validation_error_occurred', {
+          form_type: isEdit ? 'edit_task' : 'create_task',
+          error_fields: validationErrors.map(err => err.field).join(','),
+          error_count: validationErrors.length,
+          is_edit_mode: isEdit
+        });
+      }
+
       return;
     }
 

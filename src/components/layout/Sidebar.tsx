@@ -129,7 +129,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <NavLink
                   key={category.id}
                   to={`/tasks?category=${category.id}`}
-                  onClick={onClose}
+                  onClick={() => {
+                    // Track category quick link click
+                    if (typeof window !== 'undefined' && (window as any).pendo) {
+                      (window as any).pendo.track('category_quick_link_clicked', {
+                        category_id: category.id,
+                        category_name: category.name,
+                        category_task_count: categoryTaskCount
+                      });
+                    }
+                    onClose();
+                  }}
                   className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
                 >
                   <span

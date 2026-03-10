@@ -33,8 +33,10 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!quickTaskTitle.trim()) return;
 
+    const taskTitle = quickTaskTitle.trim();
+
     addTask({
-      title: quickTaskTitle.trim(),
+      title: taskTitle,
       description: '',
       status: 'pending',
       priority: 'medium',
@@ -44,6 +46,13 @@ export const Dashboard: React.FC = () => {
       reminder: 'none',
       subtasks: [],
     });
+
+    // Track quick task creation event
+    if (typeof window !== 'undefined' && (window as any).pendo) {
+      (window as any).pendo.track('task_quick_added', {
+        task_title_length: taskTitle.length
+      });
+    }
 
     setQuickTaskTitle('');
     showToast('Task created successfully!', 'success');
@@ -80,28 +89,64 @@ export const Dashboard: React.FC = () => {
           value={totalTasks}
           icon={<ListTodo className="h-6 w-6" />}
           color="blue"
-          onClick={() => navigate('/tasks')}
+          onClick={() => {
+            if (typeof window !== 'undefined' && (window as any).pendo) {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
+                stat_type: 'total_tasks',
+                stat_value: totalTasks,
+                target_filter: 'all'
+              });
+            }
+            navigate('/tasks');
+          }}
         />
         <StatCard
           title="Completed"
           value={completedTasks}
           icon={<CheckCircle className="h-6 w-6" />}
           color="green"
-          onClick={() => navigate('/tasks?status=completed')}
+          onClick={() => {
+            if (typeof window !== 'undefined' && (window as any).pendo) {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
+                stat_type: 'completed',
+                stat_value: completedTasks,
+                target_filter: 'completed'
+              });
+            }
+            navigate('/tasks?status=completed');
+          }}
         />
         <StatCard
           title="Pending"
           value={pendingTasks}
           icon={<Clock className="h-6 w-6" />}
           color="yellow"
-          onClick={() => navigate('/tasks?status=pending')}
+          onClick={() => {
+            if (typeof window !== 'undefined' && (window as any).pendo) {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
+                stat_type: 'pending',
+                stat_value: pendingTasks,
+                target_filter: 'pending'
+              });
+            }
+            navigate('/tasks?status=pending');
+          }}
         />
         <StatCard
           title="Overdue"
           value={overdueTasks}
           icon={<AlertTriangle className="h-6 w-6" />}
           color="red"
-          onClick={() => navigate('/tasks?status=overdue')}
+          onClick={() => {
+            if (typeof window !== 'undefined' && (window as any).pendo) {
+              (window as any).pendo.track('dashboard_stat_card_clicked', {
+                stat_type: 'overdue',
+                stat_value: overdueTasks,
+                target_filter: 'overdue'
+              });
+            }
+            navigate('/tasks?status=overdue');
+          }}
         />
       </div>
 

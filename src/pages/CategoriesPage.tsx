@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, FolderOpen } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -24,6 +24,8 @@ export const CategoriesPage: React.FC = () => {
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [formError, setFormError] = useState<string | null>(null);
 
+  const modalOpenTimeRef = useRef<number>(0);
+
   const colorOptions = [
     '#3B82F6', // Blue
     '#10B981', // Green
@@ -48,6 +50,17 @@ export const CategoriesPage: React.FC = () => {
 
     if (errors.length > 0) {
       setFormError(errors[0].message);
+
+      // Track category validation error event
+      if (typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('category_form_validation_error', {
+          error_type: 'validation',
+          error_message: errors[0].message,
+          is_edit: false,
+          category_name_length: newCategoryName.length
+        });
+      }
+
       return;
     }
 
@@ -68,6 +81,17 @@ export const CategoriesPage: React.FC = () => {
 
     if (errors.length > 0) {
       setFormError(errors[0].message);
+
+      // Track category validation error event
+      if (typeof window !== 'undefined' && (window as any).pendo) {
+        (window as any).pendo.track('category_form_validation_error', {
+          error_type: 'validation',
+          error_message: errors[0].message,
+          is_edit: true,
+          category_name_length: newCategoryName.length
+        });
+      }
+
       return;
     }
 
@@ -101,14 +125,48 @@ export const CategoriesPage: React.FC = () => {
     setNewCategoryName(category.name);
     setNewCategoryColor(category.color);
     setFormError(null);
+    modalOpenTimeRef.current = Date.now();
+
+    // Track modal opened event
+    if (typeof window !== 'undefined' && (window as any).pendo) {
+      (window as any).pendo.track('modal_opened', {
+        modal_type: 'edit_category',
+        modal_context: category.id,
+        trigger_action: 'edit_button_click'
+      });
+    }
   };
 
   const closeEditModal = () => {
+    const hadInput = newCategoryName !== (editingCategory?.name || '');
+    const timeOpenSeconds = Math.floor((Date.now() - modalOpenTimeRef.current) / 1000);
+
+    // Track modal cancelled event
+    if (typeof window !== 'undefined' && (window as any).pendo) {
+      (window as any).pendo.track('modal_cancelled', {
+        modal_type: 'edit_category',
+        had_input: hadInput,
+        time_open_seconds: timeOpenSeconds
+      });
+    }
+
     setEditingCategory(null);
     resetForm();
   };
 
   const closeAddModal = () => {
+    const hadInput = newCategoryName.trim() !== '';
+    const timeOpenSeconds = Math.floor((Date.now() - modalOpenTimeRef.current) / 1000);
+
+    // Track modal cancelled event
+    if (typeof window !== 'undefined' && (window as any).pendo) {
+      (window as any).pendo.track('modal_cancelled', {
+        modal_type: 'add_category',
+        had_input: hadInput,
+        time_open_seconds: timeOpenSeconds
+      });
+    }
+
     setShowAddModal(false);
     resetForm();
   };
@@ -123,7 +181,19 @@ export const CategoriesPage: React.FC = () => {
             Manage your task categories to stay organized
           </p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button onClick={() => {
+          setShowAddModal(true);
+          modalOpenTimeRef.current = Date.now();
+
+          // Track modal opened event
+          if (typeof window !== 'undefined' && (window as any).pendo) {
+            (window as any).pendo.track('modal_opened', {
+              modal_type: 'add_category',
+              modal_context: 'categories_page',
+              trigger_action: 'new_category_button_click'
+            });
+          }
+        }}>
           <Plus className="h-4 w-4 mr-1" />
           New Category
         </Button>
@@ -165,7 +235,19 @@ export const CategoriesPage: React.FC = () => {
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => setDeleteModalCategory(category)}
+                      onClick={() => {
+                        setDeleteModalCategory(category);
+                        modalOpenTimeRef.current = Date.now();
+
+                        // Track modal opened event
+                        if (typeof window !== 'undefined' && (window as any).pendo) {
+                          (window as any).pendo.track('modal_opened', {
+                            modal_type: 'delete_category',
+                            modal_context: category.id,
+                            trigger_action: 'delete_button_click'
+                          });
+                        }
+                      }}
                       className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                       title="Delete category"
                     >
@@ -182,7 +264,17 @@ export const CategoriesPage: React.FC = () => {
               </div>
 
               <button
-                onClick={() => navigate(`/tasks?category=${category.id}`)}
+                onClick={() => {
+                  // Track category tasks viewed event
+                  if (typeof window !== 'undefined' && (window as any).pendo) {
+                    (window as any).pendo.track('category_tasks_viewed', {
+                      category_id: category.id,
+                      category_name: category.name,
+                      task_count: taskCount
+                    });
+                  }
+                  navigate(`/tasks?category=${category.id}`);
+                }}
                 className="mt-3 w-full text-sm text-blue-500 hover:text-blue-600 font-medium text-left"
               >
                 View tasks →
@@ -295,7 +387,20 @@ export const CategoriesPage: React.FC = () => {
       {/* Delete Category Modal */}
       <Modal
         isOpen={!!deleteModalCategory}
-        onClose={() => setDeleteModalCategory(null)}
+        onClose={() => {
+          const timeOpenSeconds = Math.floor((Date.now() - modalOpenTimeRef.current) / 1000);
+
+          // Track modal cancelled event
+          if (typeof window !== 'undefined' && (window as any).pendo) {
+            (window as any).pendo.track('modal_cancelled', {
+              modal_type: 'delete_category',
+              had_input: false,
+              time_open_seconds: timeOpenSeconds
+            });
+          }
+
+          setDeleteModalCategory(null);
+        }}
         title="Delete Category"
         footer={
           <div className="flex justify-end gap-3">

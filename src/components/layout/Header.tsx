@@ -38,7 +38,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isSidebarOpen }) =
           {/* Notifications */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => {
+                const wasOpen = showNotifications;
+                setShowNotifications(!showNotifications);
+
+                // Track notification bell opened event
+                if (!wasOpen && typeof window !== 'undefined' && (window as any).pendo) {
+                  (window as any).pendo.track('notification_bell_opened', {
+                    unread_count: unreadCount,
+                    total_notifications: notifications.length
+                  });
+                }
+              }}
               className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
             >
               <Bell className="h-5 w-5" />
@@ -61,7 +72,21 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isSidebarOpen }) =
                     <h3 className="font-semibold text-gray-900">Notifications</h3>
                     {unreadCount > 0 && (
                       <button
-                        onClick={markAllAsRead}
+                        onClick={() => {
+                          // Track notifications mark all read event
+                          if (typeof window !== 'undefined' && (window as any).pendo) {
+                            const notificationTypes = notifications
+                              .filter(n => !n.read)
+                              .map(n => n.type)
+                              .filter((type, index, arr) => arr.indexOf(type) === index);
+
+                            (window as any).pendo.track('notifications_mark_all_read', {
+                              unread_count: unreadCount,
+                              notification_types: notificationTypes.join(',')
+                            });
+                          }
+                          markAllAsRead();
+                        }}
                         className="text-sm text-blue-500 hover:text-blue-600"
                       >
                         Mark all read
@@ -78,6 +103,20 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isSidebarOpen }) =
                         <div
                           key={notification.id}
                           onClick={() => {
+                            // Track notification clicked event
+                            if (typeof window !== 'undefined' && (window as any).pendo) {
+                              const timeSinceNotificationMs = new Date().getTime() - new Date(notification.createdAt).getTime();
+                              const timeSinceNotificationMinutes = Math.floor(timeSinceNotificationMs / (1000 * 60));
+
+                              (window as any).pendo.track('notification_clicked', {
+                                notification_id: notification.id,
+                                notification_type: notification.type,
+                                task_id: notification.taskId,
+                                was_read: notification.read,
+                                time_since_notification: timeSinceNotificationMinutes
+                              });
+                            }
+
                             markAsRead(notification.id);
                             navigate(`/tasks/${notification.taskId}`);
                             setShowNotifications(false);
