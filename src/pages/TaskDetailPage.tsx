@@ -57,18 +57,62 @@ export const TaskDetailPage: React.FC = () => {
   };
 
   const handleToggleStatus = () => {
+    const previousStatus = task.status;
+    const newStatus = previousStatus === 'pending' ? 'completed' : 'pending';
     toggleTaskStatus(task.id);
+
+    // Pendo Track Event: task_status_toggled
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_status_toggled', {
+        task_id: task.id,
+        new_status: newStatus,
+        previous_status: previousStatus,
+        task_priority: task.priority,
+        source_page: 'task_detail',
+        was_overdue: overdue,
+      });
+    }
+
     showToast(
-      task.status === 'pending' ? 'Task completed!' : 'Task marked as pending',
+      previousStatus === 'pending' ? 'Task completed!' : 'Task marked as pending',
       'success'
     );
   };
 
   const handleToggleSubtask = (subtaskId: string) => {
+    const subtask = task.subtasks.find(s => s.id === subtaskId);
+    const newCompletedState = subtask ? !subtask.completed : true;
+    const completedCount = task.subtasks.filter(s => s.completed).length;
+    const adjustedCount = newCompletedState ? completedCount + 1 : completedCount - 1;
+    const progressPercent = task.subtasks.length > 0
+      ? Math.round((adjustedCount / task.subtasks.length) * 100)
+      : 0;
+
     toggleSubtask(task.id, subtaskId);
+
+    // Pendo Track Event: subtask_toggled
+    if (typeof pendo !== 'undefined') {
+      pendo.track('subtask_toggled', {
+        task_id: task.id,
+        subtask_id: subtaskId,
+        new_completed_state: newCompletedState,
+        subtask_progress_percent: progressPercent,
+        total_subtasks: task.subtasks.length,
+      });
+    }
   };
 
   const handleDelete = () => {
+    // Pendo Track Event: task_deleted
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_deleted', {
+        task_id: task.id,
+        task_status: task.status,
+        task_priority: task.priority,
+        source_page: 'task_detail',
+      });
+    }
+
     deleteTask(task.id);
     showToast('Task deleted', 'success');
     navigate('/tasks');

@@ -83,11 +83,25 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const requestPermission = async (): Promise<boolean> => {
     if (!('Notification' in window)) {
+      // Pendo Track Event: browser_notification_permission_requested
+      if (typeof pendo !== 'undefined') {
+        pendo.track('browser_notification_permission_requested', {
+          permission_result: 'unsupported',
+        });
+      }
       return false;
     }
 
     const permission = await Notification.requestPermission();
     setPermissionStatus(permission);
+
+    // Pendo Track Event: browser_notification_permission_requested
+    if (typeof pendo !== 'undefined') {
+      pendo.track('browser_notification_permission_requested', {
+        permission_result: permission,
+      });
+    }
+
     return permission === 'granted';
   };
 
@@ -105,6 +119,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               'reminder'
             );
             markReminderTriggered(task.id);
+
+            // Pendo Track Event: reminder_triggered
+            if (typeof pendo !== 'undefined') {
+              pendo.track('reminder_triggered', {
+                task_id: task.id,
+                task_title: task.title,
+                reminder_type: task.reminder,
+                due_date: task.dueDate,
+              });
+            }
           }
 
           // Check for overdue (only notify once per task per session)
@@ -119,6 +143,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+
+              // Pendo Track Event: overdue_notification_triggered
+              if (typeof pendo !== 'undefined') {
+                pendo.track('overdue_notification_triggered', {
+                  task_id: task.id,
+                  task_title: task.title,
+                  due_date: task.dueDate,
+                  task_priority: task.priority,
+                });
+              }
             }
           }
         }
