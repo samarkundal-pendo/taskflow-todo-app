@@ -74,10 +74,18 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const markAllAsRead = () => {
+    pendo.track('all_notifications_marked_read', {
+      totalNotifications: notifications.length,
+      previousUnreadCount: notifications.filter(n => !n.read).length,
+    });
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const clearNotifications = () => {
+    pendo.track('notifications_cleared', {
+      notificationCount: notifications.length,
+      unreadCount: notifications.filter(n => !n.read).length,
+    });
     setNotifications([]);
   };
 
@@ -104,6 +112,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               `Reminder: Task "${task.title}" is due soon!`,
               'reminder'
             );
+            pendo.track('reminder_triggered', {
+              taskId: task.id,
+              taskTitle: task.title,
+              reminderType: task.reminder,
+              notificationType: 'reminder',
+              browserNotificationPermission: 'Notification' in window ? Notification.permission : 'unsupported',
+            });
             markReminderTriggered(task.id);
           }
 
@@ -119,6 +134,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
+              pendo.track('overdue_notification_sent', {
+                taskId: task.id,
+                taskTitle: task.title,
+                taskPriority: task.priority,
+                categoryId: task.categoryId,
+                dueDate: task.dueDate,
+              });
             }
           }
         }

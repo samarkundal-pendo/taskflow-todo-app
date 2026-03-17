@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -110,6 +110,29 @@ export const TasksPage: React.FC = () => {
     return result;
   }, [tasks, filter, sort]);
 
+  // Track search queries with debounce
+  const searchTrackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!filter.search) return;
+    if (searchTrackTimeoutRef.current) {
+      clearTimeout(searchTrackTimeoutRef.current);
+    }
+    searchTrackTimeoutRef.current = setTimeout(() => {
+      pendo.track('task_search_executed', {
+        query: filter.search.substring(0, 100),
+        resultsCount: filteredTasks.length,
+        statusFilter: filter.status,
+        priorityFilter: filter.priority,
+        categoryFilter: filter.categoryId,
+      });
+    }, 500);
+    return () => {
+      if (searchTrackTimeoutRef.current) {
+        clearTimeout(searchTrackTimeoutRef.current);
+      }
+    };
+  }, [filter.search, filteredTasks.length, filter.status, filter.priority, filter.categoryId]);
+
   const handleToggleStatus = (taskId: string) => {
     toggleTaskStatus(taskId);
     const task = tasks.find(t => t.id === taskId);
@@ -120,7 +143,19 @@ export const TasksPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (deleteTaskId) {
+      const taskToDelete = tasks.find(t => t.id === deleteTaskId);
       deleteTask(deleteTaskId);
+      if (taskToDelete) {
+        pendo.track('task_deleted', {
+          taskId: deleteTaskId,
+          taskStatus: taskToDelete.status,
+          taskPriority: taskToDelete.priority,
+          categoryId: taskToDelete.categoryId,
+          hadDueDate: !!taskToDelete.dueDate,
+          subtaskCount: taskToDelete.subtasks.length,
+          source: 'tasks_page',
+        });
+      }
       showToast('Task deleted', 'success');
       setDeleteTaskId(null);
     }
