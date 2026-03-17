@@ -74,12 +74,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const markAllAsRead = () => {
-    if (typeof pendo !== 'undefined') {
-      pendo.track('notifications_mark_all_read', {
-        notificationCount: notifications.length,
-        unreadCount: notifications.filter(n => !n.read).length,
-      });
-    }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
@@ -94,11 +88,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const permission = await Notification.requestPermission();
     setPermissionStatus(permission);
-    if (permission === 'granted' && typeof pendo !== 'undefined') {
-      pendo.track('browser_notification_permission_granted', {
-        permissionState: permission,
-      });
-    }
     return permission === 'granted';
   };
 
@@ -115,17 +104,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
               `Reminder: Task "${task.title}" is due soon!`,
               'reminder'
             );
-            if (typeof pendo !== 'undefined') {
-              pendo.track('reminder_triggered', {
-                taskId: task.id,
-                taskTitle: task.title,
-                priority: task.priority,
-                categoryId: task.categoryId,
-                reminderType: task.reminder,
-                dueDate: task.dueDate,
-                isOverdue: task.dueDate ? new Date(task.dueDate).getTime() < Date.now() : false,
-              });
-            }
             markReminderTriggered(task.id);
           }
 
@@ -141,16 +119,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 `Task "${task.title}" is overdue!`,
                 'overdue'
               );
-              if (typeof pendo !== 'undefined') {
-                pendo.track('overdue_notification_triggered', {
-                  taskId: task.id,
-                  taskTitle: task.title,
-                  priority: task.priority,
-                  categoryId: task.categoryId,
-                  dueDate: task.dueDate,
-                  overdueByMs: task.dueDate ? Date.now() - new Date(task.dueDate).getTime() : 0,
-                });
-              }
             }
           }
         }
