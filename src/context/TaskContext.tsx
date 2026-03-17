@@ -188,10 +188,52 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const toggleTaskStatus = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task) {
+      const category = state.categories.find(c => c.id === task.categoryId);
+      if (task.status === 'pending') {
+        if (typeof pendo !== 'undefined') {
+          pendo.track('task_completed', {
+            taskId: task.id,
+            priority: task.priority,
+            categoryId: task.categoryId,
+            categoryName: category?.name || '',
+            hadDueDate: !!task.dueDate,
+            wasOverdue: task.dueDate ? new Date(task.dueDate).getTime() < Date.now() : false,
+            subtaskCount: task.subtasks.length,
+            completedSubtaskCount: task.subtasks.filter(s => s.completed).length,
+            timeToCompleteMs: Date.now() - new Date(task.createdAt).getTime(),
+          });
+        }
+      } else {
+        if (typeof pendo !== 'undefined') {
+          pendo.track('task_reopened', {
+            taskId: task.id,
+            priority: task.priority,
+            categoryId: task.categoryId,
+            timeCompletedMs: task.completedAt ? Date.now() - new Date(task.completedAt).getTime() : 0,
+          });
+        }
+      }
+    }
     dispatch({ type: 'TOGGLE_TASK_STATUS', payload: taskId });
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task && typeof pendo !== 'undefined') {
+      const subtask = task.subtasks.find(s => s.id === subtaskId);
+      const completedCount = task.subtasks.filter(s => s.completed).length;
+      const newCompletedCount = subtask?.completed ? completedCount - 1 : completedCount + 1;
+      pendo.track('subtask_toggled', {
+        taskId,
+        subtaskId,
+        newStatus: subtask?.completed ? 'pending' : 'completed',
+        totalSubtasks: task.subtasks.length,
+        completedSubtasks: newCompletedCount,
+        allSubtasksComplete: newCompletedCount === task.subtasks.length,
+      });
+    }
     dispatch({ type: 'TOGGLE_SUBTASK', payload: { taskId, subtaskId } });
   };
 

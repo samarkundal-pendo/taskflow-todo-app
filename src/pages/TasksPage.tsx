@@ -37,6 +37,23 @@ export const TasksPage: React.FC = () => {
     const currentSort = searchParams.get('sort');
     if (currentSort && currentSort !== 'createdAt') params.set('sort', currentSort);
     setSearchParams(params, { replace: true });
+
+    const activeFilterCount = [
+      newFilter.status !== 'all',
+      newFilter.priority !== 'all',
+      newFilter.categoryId !== 'all',
+      !!newFilter.search,
+    ].filter(Boolean).length;
+    if (activeFilterCount > 0 && typeof pendo !== 'undefined') {
+      pendo.track('task_search_executed', {
+        searchQuery: newFilter.search || '',
+        statusFilter: newFilter.status,
+        priorityFilter: newFilter.priority,
+        categoryFilter: newFilter.categoryId,
+        sortBy: currentSort || 'createdAt',
+        activeFilterCount,
+      });
+    }
   }, [searchParams, setSearchParams]);
 
   const setSort = useCallback((newSort: TaskSort) => {
