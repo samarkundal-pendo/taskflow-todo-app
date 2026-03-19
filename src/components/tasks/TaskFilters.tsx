@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
 import { TaskFilter, TaskSort, Category } from '../../types';
 import { Select } from '../common/Input';
@@ -21,6 +21,26 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   onSortChange,
   onClearFilters,
 }) => {
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const trackSearchEvent = useCallback((query: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    if (!query.trim()) return;
+    searchDebounceRef.current = setTimeout(() => {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_search_executed', {
+          query: query.trim().substring(0, 100),
+          statusFilter: filter.status,
+          priorityFilter: filter.priority,
+          categoryFilter: filter.categoryId,
+          sortBy: sort,
+        });
+      }
+    }, 500);
+  }, [filter.status, filter.priority, filter.categoryId, sort]);
+
   const hasActiveFilters =
     filter.status !== 'all' ||
     filter.priority !== 'all' ||
@@ -62,7 +82,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           type="text"
           placeholder="Search tasks..."
           value={filter.search}
-          onChange={e => onFilterChange({ ...filter, search: e.target.value })}
+          onChange={e => {
+            onFilterChange({ ...filter, search: e.target.value });
+            trackSearchEvent(e.target.value);
+          }}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
