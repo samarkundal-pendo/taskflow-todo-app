@@ -8,9 +8,18 @@ import { seedData } from './utils/seedData'
 declare global {
   interface Window {
     seedData: () => void;
+    pendo: any;
   }
 }
+
+declare var pendo: any;
 window.seedData = seedData;
+
+pendo.initialize({
+  visitor: {
+    id: ''
+  }
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
