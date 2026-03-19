@@ -176,23 +176,114 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       reminderTriggered: false,
     };
     dispatch({ type: 'ADD_TASK', payload: newTask });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_created', {
+        taskId: newTask.id,
+        title: newTask.title,
+        priority: newTask.priority,
+        categoryId: newTask.categoryId,
+        hasDueDate: !!newTask.dueDate,
+        hasDueTime: !!newTask.dueTime,
+        reminderType: newTask.reminder,
+        subtaskCount: newTask.subtasks.length,
+        hasDescription: !!newTask.description,
+      });
+    }
   };
 
   const updateTask = (task: Task) => {
     const updatedTask = { ...task, updatedAt: new Date().toISOString() };
     dispatch({ type: 'UPDATE_TASK', payload: updatedTask });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_updated', {
+        taskId: task.id,
+        priority: task.priority,
+        categoryId: task.categoryId,
+        hasDueDate: !!task.dueDate,
+        hasDueTime: !!task.dueTime,
+        reminderType: task.reminder,
+        subtaskCount: task.subtasks.length,
+        hasDescription: !!task.description,
+      });
+    }
   };
 
   const deleteTask = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
     dispatch({ type: 'DELETE_TASK', payload: taskId });
+
+    if (typeof pendo !== 'undefined' && task) {
+      pendo.track('task_deleted', {
+        taskId,
+        taskStatus: task.status,
+        taskPriority: task.priority,
+        hadDueDate: !!task.dueDate,
+        subtaskCount: task.subtasks.length,
+        categoryId: task.categoryId,
+      });
+    }
   };
 
   const toggleTaskStatus = (taskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
     dispatch({ type: 'TOGGLE_TASK_STATUS', payload: taskId });
+
+    if (typeof pendo !== 'undefined' && task) {
+      if (task.status === 'pending') {
+        const completedSubtasks = task.subtasks.filter(s => s.completed).length;
+        const timeSinceCreation = Math.round(
+          (Date.now() - new Date(task.createdAt).getTime()) / 1000
+        );
+        pendo.track('task_completed', {
+          taskId,
+          taskPriority: task.priority,
+          categoryId: task.categoryId,
+          hadDueDate: !!task.dueDate,
+          wasOverdue: task.dueDate
+            ? new Date(task.dueDate).getTime() < Date.now()
+            : false,
+          subtaskCount: task.subtasks.length,
+          completedSubtaskCount: completedSubtasks,
+          timeSinceCreation,
+        });
+      } else {
+        const timeSinceCompletion = task.completedAt
+          ? Math.round(
+              (Date.now() - new Date(task.completedAt).getTime()) / 1000
+            )
+          : 0;
+        pendo.track('task_uncompleted', {
+          taskId,
+          taskPriority: task.priority,
+          categoryId: task.categoryId,
+          timeSinceCompletion,
+        });
+      }
+    }
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
     dispatch({ type: 'TOGGLE_SUBTASK', payload: { taskId, subtaskId } });
+
+    if (typeof pendo !== 'undefined' && task) {
+      const subtask = task.subtasks.find(s => s.id === subtaskId);
+      if (subtask && !subtask.completed) {
+        const completedBefore = task.subtasks.filter(s => s.completed).length;
+        const completedAfter = completedBefore + 1;
+        pendo.track('subtask_completed', {
+          taskId,
+          subtaskId,
+          totalSubtasks: task.subtasks.length,
+          completedSubtasks: completedAfter,
+          progressPercentage: Math.round(
+            (completedAfter / task.subtasks.length) * 100
+          ),
+        });
+      }
+    }
   };
 
   const markReminderTriggered = (taskId: string) => {
@@ -211,14 +302,42 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isDefault: false,
     };
     dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('category_created', {
+        categoryId: newCategory.id,
+        categoryName: newCategory.name,
+        categoryColor: newCategory.color,
+        totalCategoryCount: state.categories.length + 1,
+      });
+    }
   };
 
   const updateCategory = (category: Category) => {
     dispatch({ type: 'UPDATE_CATEGORY', payload: category });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('category_updated', {
+        categoryId: category.id,
+        categoryName: category.name,
+        categoryColor: category.color,
+      });
+    }
   };
 
   const deleteCategory = (categoryId: string, reassignTo: string) => {
+    const category = state.categories.find(c => c.id === categoryId);
+    const affectedTaskCount = state.tasks.filter(t => t.categoryId === categoryId).length;
     dispatch({ type: 'DELETE_CATEGORY', payload: { categoryId, reassignTo } });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('category_deleted', {
+        categoryId,
+        categoryName: category?.name || '',
+        reassignToCategoryId: reassignTo,
+        affectedTaskCount,
+      });
+    }
   };
 
   const getCategoryById = (categoryId: string) => {

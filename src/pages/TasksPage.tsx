@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -110,6 +110,33 @@ export const TasksPage: React.FC = () => {
     return result;
   }, [tasks, filter, sort]);
 
+  // Track search events with debounce
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSearchRef = useRef(filter.search);
+  useEffect(() => {
+    if (filter.search === prevSearchRef.current) return;
+    prevSearchRef.current = filter.search;
+    if (!filter.search) return;
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('task_search_executed', {
+          searchQuery: filter.search,
+          resultsCount: filteredTasks.length,
+          activeStatusFilter: filter.status,
+          activePriorityFilter: filter.priority,
+          activeCategoryFilter: filter.categoryId,
+          activeSort: sort,
+        });
+      }
+    }, 500);
+
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [filter.search, filter.status, filter.priority, filter.categoryId, sort, filteredTasks.length]);
+
   const handleToggleStatus = (taskId: string) => {
     toggleTaskStatus(taskId);
     const task = tasks.find(t => t.id === taskId);
@@ -127,6 +154,16 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    if (typeof pendo !== 'undefined') {
+      pendo.track('task_filters_cleared', {
+        previousStatusFilter: filter.status,
+        previousPriorityFilter: filter.priority,
+        previousCategoryFilter: filter.categoryId,
+        previousSort: sort,
+        previousSearchQuery: filter.search,
+      });
+    }
+
     setFilter({
       status: 'all',
       priority: 'all',
