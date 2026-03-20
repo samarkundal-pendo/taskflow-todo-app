@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, CheckCircle, Clock, AlertTriangle, ListTodo } from 'lucide-react';
+import { Plus, CheckCircle, Clock, AlertTriangle, ListTodo, Rocket, FolderPlus, Tags, Bell } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { StatCard } from '../components/common/Card';
 import { TaskList } from '../components/tasks/TaskList';
@@ -110,6 +110,55 @@ export const Dashboard: React.FC = () => {
           color="red"
           onClick={() => navigate('/tasks?status=overdue')}
         />
+      </div>
+
+      {/* Onboarding */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Rocket className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Get Started</h2>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Complete these steps to make the most of TaskFlow.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => navigate('/tasks/new')}
+            className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-4 text-left hover:border-blue-400 hover:shadow-sm transition-all"
+          >
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FolderPlus className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Create a Task</p>
+              <p className="text-xs text-gray-500">Add your first task to get organized</p>
+            </div>
+          </button>
+          <button
+            onClick={() => navigate('/categories')}
+            className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-4 text-left hover:border-green-400 hover:shadow-sm transition-all"
+          >
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Tags className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Set Up Categories</p>
+              <p className="text-xs text-gray-500">Organize tasks by category</p>
+            </div>
+          </button>
+          <button
+            onClick={() => navigate('/tasks/new')}
+            className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-4 text-left hover:border-yellow-400 hover:shadow-sm transition-all"
+          >
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Bell className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Enable Reminders</p>
+              <p className="text-xs text-gray-500">Never miss a deadline</p>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Quick Add Task */}
