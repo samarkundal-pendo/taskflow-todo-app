@@ -3,8 +3,22 @@ import { Task, Category, Notification } from '../types';
 const TASKS_KEY = 'todo_app_tasks';
 const CATEGORIES_KEY = 'todo_app_categories';
 const NOTIFICATIONS_KEY = 'todo_app_notifications';
+const VISITOR_ID_KEY = 'pendo_visitor_id';
+
+const generateVisitorId = (): string => {
+  return 'anon_' + crypto.randomUUID();
+};
 
 export const storage = {
+  getVisitorId: (): string => {
+    let id = localStorage.getItem(VISITOR_ID_KEY);
+    if (!id) {
+      id = generateVisitorId();
+      localStorage.setItem(VISITOR_ID_KEY, id);
+    }
+    return id;
+  },
+
   getTasks: (): Task[] => {
     const data = localStorage.getItem(TASKS_KEY);
     return data ? JSON.parse(data) : [];
